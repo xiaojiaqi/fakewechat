@@ -110,7 +110,7 @@ func redirect(rw http.ResponseWriter, req *http.Request) {
 func main() {
 
 	PrintVersion()
-	 
+
 	servermap = make(map[string]ServerStatus)
 
 	flags.Parse()
@@ -118,25 +118,25 @@ func main() {
 	var regexpHandler RegexpHandler
 	xp, err := regexp.Compile("/server")
 	if err == nil {
-		regexpHandler.HandleFunc(xp, getserver)  
+		regexpHandler.HandleFunc(xp, getserver)
 	}
 	xp, err = regexp.Compile("/regist/(cache|gw|poster|localposter|redis|memcached)/[0-9]*/.*")
 	if err == nil {
-		regexpHandler.HandleFunc(xp, regist)  
+		regexpHandler.HandleFunc(xp, regist)
 	}
 
 	xp, err = regexp.Compile("/friend/[0-9]*")
 	if err == nil {
-		regexpHandler.HandleFunc(xp, redirect)  
+		regexpHandler.HandleFunc(xp, redirect)
 	}
 
 	xp, err = regexp.Compile("/inbox/[0-9]*/[0-9]*")
 	if err == nil {
-		regexpHandler.HandleFunc(xp, redirect)  
+		regexpHandler.HandleFunc(xp, redirect)
 	}
 	xp, err = regexp.Compile("/outbox/[0-9]*/[0-9]*")
 	if err == nil {
-		regexpHandler.HandleFunc(xp, redirect)  
+		regexpHandler.HandleFunc(xp, redirect)
 	}
 
 	server := &http.Server{

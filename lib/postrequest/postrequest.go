@@ -2,13 +2,12 @@ package postrequest
 
 import (
 	"errors"
-	
+
 	. "github.com/fakewechat/message"
 )
 
 func RecvfromQueue(queue *chan *GeneralMessage) (*GeneralMessage, error) {
 
-	
 	select {
 	case v := <-*queue:
 		return v, nil
@@ -20,7 +19,6 @@ func RecvfromQueue(queue *chan *GeneralMessage) (*GeneralMessage, error) {
 
 func RecvfromQueueBlock(queue *chan *GeneralMessage) (*GeneralMessage, error) {
 
-	
 	v := <-*queue
 	return v, nil
 }
@@ -43,13 +41,13 @@ func GetSomeMessageFromQueue(queue *chan *GeneralMessage, least int) []*GeneralM
 }
 
 func PushtoQueue(queue *chan *GeneralMessage, req *GeneralMessage) error {
-	
+
 	select {
 	case *queue <- req:
-		
+
 		return nil
 	default:
-		
+
 		return errors.New("it is full")
 	}
 }

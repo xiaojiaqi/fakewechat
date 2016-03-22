@@ -50,9 +50,9 @@ func SyncServerStatusChanged(url string, servertype []string, rg []int) {
 	for {
 		time.Sleep(MonitServerUpdateInterval * time.Second)
 		newmap := getServerStatusFromUrl(url)
-		
+
 		destmap := Filter(newmap, servertype, rg)
-		
+
 		bresult := false
 		if len(destmap) == 0 {
 			continue
@@ -64,7 +64,7 @@ func SyncServerStatusChanged(url string, servertype []string, rg []int) {
 			fmt.Println("not equal")
 			copytoLocalServerStatus(destmap)
 		} else {
-			
+
 		}
 
 	}

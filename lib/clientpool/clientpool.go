@@ -2,17 +2,16 @@ package clientpool
 
 import (
 	"fmt"
+	"github.com/bradfitz/gomemcache/memcache"
 	. "github.com/fakewechat/lib/config"
 	. "github.com/fakewechat/lib/contstant"
 	. "github.com/fakewechat/lib/serverstatus"
-	"net/rpc"
 	. "github.com/fakewechat/lib/version"
-	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/garyburd/redigo/redis"
+	"net/rpc"
 	"strconv"
 	"sync"
 )
-
 
 type ClientInterface interface {
 	GetVersion() Version

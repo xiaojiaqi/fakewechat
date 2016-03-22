@@ -1,9 +1,9 @@
 package chatmessage
 
 import (
-	. "github.com/fakewechat/message"
-	. "github.com/fakewechat/lib/utils"
 	"fmt"
+	. "github.com/fakewechat/lib/utils"
+	. "github.com/fakewechat/message"
 )
 
 const (
@@ -52,14 +52,15 @@ func ProcessLocal_to_Local(req *GeneralMessage, Channelindex int) {
 
 */
 var client_cmd2 int
+
 func CoreLocal_to_Local(user *UserInfor, req *GeneralMessage) (result int, needupdateInBox bool) {
 
 	result = 0
 	needupdateInBox = false
 	// find out the user
 	SendIdofclient := req.Chatmessage.SendId
-    client_cmd2 += 1
-    fmt.Println("client ", client_cmd2, ToStr(req))
+	client_cmd2 += 1
+	fmt.Println("client ", client_cmd2, ToStr(req))
 
 	friend, ok := user.UserMap[req.SenderId]
 	if !ok {
@@ -80,15 +81,15 @@ func CoreLocal_to_Local(user *UserInfor, req *GeneralMessage) (result int, needu
 		needupdateInBox = true
 		user.ReceiveId += 1
 		/*
-		if friend.ReceiveId > 5 {
-			fmt.Println(SendIdofclient, friend.ReceiveId+1)
-			panic("firend.ReceiveId > 5")
-		}
+			if friend.ReceiveId > 5 {
+				fmt.Println(SendIdofclient, friend.ReceiveId+1)
+				panic("firend.ReceiveId > 5")
+			}
 		*/
-		fmt.Println("2000 ",  user.SendId, user.SendAckId, user.ReceiveId)
-		
+		fmt.Println("2000 ", user.SendId, user.SendAckId, user.ReceiveId)
+
 		result = LOCAL_TO_LOCAL_SUCCESS
-	} else { // 
+	} else { //
 		recvQ, ok := user.RecvedQueue.MessageMap[req.SenderId] // find the
 		if !ok {
 			recvQ = &SendQueue{}
@@ -129,16 +130,16 @@ func SyncLocal_to_Local(user *UserInfor, userid uint64) (int, *GeneralMessage) {
 		if ok {
 
 			delete(recvQ.MessageMap, nextrecvid)
-			
+
 			friend.ReceiveId += 1
 			/* for debug
 			if friend.ReceiveId > 5 {
 				fmt.Println(friend.ReceiveId, nextrecvid)
 				panic("firend.ReceiveId > 5")
 			} */
-			
+
 			user.ReceiveId += 1
-			fmt.Println("2000 ",  user.SendId, user.SendAckId, user.ReceiveId)
+			fmt.Println("2000 ", user.SendId, user.SendAckId, user.ReceiveId)
 			result = LOCAL_TO_LOCAL_SYNC_SUCCESS
 		} else {
 			req = nil

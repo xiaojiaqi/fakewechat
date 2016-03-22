@@ -2,8 +2,8 @@ package chatmessage
 
 import (
 	. "github.com/fakewechat/message"
-	"testing"
 	"math/rand"
+	"testing"
 	"time"
 )
 
@@ -104,7 +104,7 @@ func Test_Local_to_local2002(t *testing.T) {
 				t.Error("Test_Local_to_local2002   error, array[id].SendId != newid")
 			}
 			newid += 1
-			
+
 		}
 
 	}
@@ -134,4 +134,3 @@ func Test_Local_to_local2002(t *testing.T) {
 		t.Error("Test_Local_to_local2002   error, user.Sendid != 1230")
 	}
 }
-

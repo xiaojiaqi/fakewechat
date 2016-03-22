@@ -1,11 +1,10 @@
 package chatmessage
 
 import (
-	. "github.com/fakewechat/message"
-	. "github.com/fakewechat/lib/utils"
 	"fmt"
+	. "github.com/fakewechat/lib/utils"
+	. "github.com/fakewechat/message"
 )
-
 
 const (
 	// response of ProcessClient_to_LocalMessgae
@@ -43,18 +42,19 @@ func ProcessLocal_ack(req *GeneralMessage, Channelindex int) {
 	   	> client.ackid +1
 */
 var client_cmd3 int
+
 func CoreLocal_Ack(user *UserInfor, req *GeneralMessage) (result int) {
 
 	result = 0
-    client_cmd3 += 1
-    fmt.Println("client ", client_cmd3, ToStr(req))
+	client_cmd3 += 1
+	fmt.Println("client ", client_cmd3, ToStr(req))
 	if req.SendId <= user.SendAckId {
 		// do nothing
 		result = LOCALACK_SUCCESS_NOSYNC
 
 	} else if req.SendId == user.SendAckId+1 {
 		user.SendAckId += 1
-		fmt.Println("3000 ",  user.SendId, user.SendAckId, user.ReceiveId)
+		fmt.Println("3000 ", user.SendId, user.SendAckId, user.ReceiveId)
 		delete(user.SendedQueue.MessageMap, req.SendId)
 		result = LOCALACK_SUCCESS
 
@@ -78,9 +78,9 @@ func SyncLocal_Ack(user *UserInfor, userid uint64) (result int) {
 
 			delete(user.AckedQueue.MessageMap, newid)
 			// also remove send queue
-			delete(user.SendedQueue.MessageMap,newid)
+			delete(user.SendedQueue.MessageMap, newid)
 			user.SendAckId += 1
-			fmt.Println("3000 ",  user.SendId, user.SendAckId, user.ReceiveId)
+			fmt.Println("3000 ", user.SendId, user.SendAckId, user.ReceiveId)
 			result = LOCALACK_SYNC_SUCCESS
 		} else {
 			break

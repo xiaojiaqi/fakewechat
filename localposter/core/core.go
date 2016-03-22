@@ -6,7 +6,6 @@ import (
 	. "github.com/fakewechat/localposter/chatmessage"
 	. "github.com/fakewechat/localposter/handler"
 	. "github.com/fakewechat/message"
-
 )
 
 /*
@@ -39,9 +38,9 @@ func ProcessClient_to_Local_Message(handler ProcessHandler, req *GeneralMessage)
 		result, needupdateOutbox = CoreClient_to_Local(user, req)
 		CheckCoreClient_to_Local(result)
 
-        if result == CLIENT_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-            break
-        }
+		if result == CLIENT_TO_LOCAL_SYNC_SUCCESS_NOSEND {
+			break
+		}
 		updated := false
 		if needupdateOutbox {
 			updated = handler.UpdateUserAndOutbox(senderId, user, req)

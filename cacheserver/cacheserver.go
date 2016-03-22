@@ -66,7 +66,7 @@ func (t *CacheAPI) GetUserInfo(id *uint64, u *UserInfor) error {
 	}
 
 	*u = *UserFromRedis(n.([]byte))
-	 
+
 	return nil
 
 }

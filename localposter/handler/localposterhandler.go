@@ -44,7 +44,7 @@ func (handler *LocalPosterHandler) GetUserInfo(userid uint64) *UserInfor {
 func (handler *LocalPosterHandler) UpdateUser(userid uint64, u *UserInfor) bool {
 
 	userInfoName := GetUserInfoName(userid)
-	
+
 	conn := (redis.Conn)(*handler.Redisclient.GetRedisClient())
 	conn.Send("MULTI")
 	conn.Send("SET", userInfoName, UserToRedis(u))

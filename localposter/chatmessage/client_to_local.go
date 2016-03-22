@@ -1,11 +1,10 @@
 package chatmessage
 
 import (
-	. "github.com/fakewechat/message"
-	. "github.com/fakewechat/lib/utils"
 	"fmt"
-	)
-
+	. "github.com/fakewechat/lib/utils"
+	. "github.com/fakewechat/message"
+)
 
 const (
 	// response of ProcessClient_to_LocalMessgae
@@ -55,23 +54,23 @@ const (
 //refactor me
 
 var client_cmd int
+
 func CoreClient_to_Local(user *UserInfor, req *GeneralMessage) (result int, needupdateOutBox bool) {
 	result = 0
-    client_cmd += 1
-    fmt.Println("client ", client_cmd, ToStr(req))
+	client_cmd += 1
+	fmt.Println("client ", client_cmd, ToStr(req))
 	needupdateOutBox = false
 	if req.SendId <= user.SendId { // sended meesgae
-		
 
 		if user.SendAckId >= req.SendId {
 			result = CLIENT_TO_LOCAL_SUCCESS_NOSEND
 		} else { // has been send to local , but didn't recv the ack, may been loss, need retry
 			r, ok := user.SendedQueue.MessageMap[req.SendId]
-		if !ok {
-			panic("no data")
-		} else {
-			*req = *r
-		}
+			if !ok {
+				panic("no data")
+			} else {
+				*req = *r
+			}
 			result = CLIENT_TO_LOCAL_SUCCESS
 		}
 	} else if req.SendId == user.SendId+1 { // good ! it it what we need
@@ -87,13 +86,13 @@ func CoreClient_to_Local(user *UserInfor, req *GeneralMessage) (result int, need
 
 		req.Chatmessage.SendId = friend.SendId
 		/*
-		if req.Chatmessage.MessageBody != strconv.Itoa(int(friend.SendId)) {
-			fmt.Println(req.Chatmessage.MessageBody, friend.SendId)
-			panic("req.Chatmessage.MessageBody != strconv.Itoa( friend.SendId)")
-		}*/
+			if req.Chatmessage.MessageBody != strconv.Itoa(int(friend.SendId)) {
+				fmt.Println(req.Chatmessage.MessageBody, friend.SendId)
+				panic("req.Chatmessage.MessageBody != strconv.Itoa( friend.SendId)")
+			}*/
 		user.SendedQueue.MessageMap[req.SendId] = req
-		fmt.Println("1000 ",  user.SendId, user.SendAckId, user.ReceiveId)
-		
+		fmt.Println("1000 ", user.SendId, user.SendAckId, user.ReceiveId)
+
 		result = CLIENT_TO_LOCAL_SUCCESS
 	} else { // the
 		_, ok := user.SendedQueue.MessageMap[req.SendId]
@@ -150,7 +149,6 @@ func CheckCoreClient_to_Local(r int) bool {
 	}
 
 }
-
 
 // sync
 func CheckSyncClient_to_Local(r int) bool {

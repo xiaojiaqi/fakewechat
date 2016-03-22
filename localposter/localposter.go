@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	. "github.com/fakewechat/lib/clientpool"
 	. "github.com/fakewechat/lib/config"
 	. "github.com/fakewechat/lib/contstant"
 	"github.com/fakewechat/lib/flags"
 	. "github.com/fakewechat/lib/monitor"
 	. "github.com/fakewechat/lib/postrequest"
-	. "github.com/fakewechat/lib/clientpool"
 	"github.com/fakewechat/lib/serverstatus"
 	. "github.com/fakewechat/lib/updateserverstatus"
 	. "github.com/fakewechat/localposter/core"

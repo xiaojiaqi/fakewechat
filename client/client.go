@@ -29,7 +29,7 @@ func getHttp(url string) string {
 	client := http.Client{
 		Transport: &transport,
 	}
-	
+
 	resp, err := client.Get(url)
 	if err != nil {
 		return ""
@@ -39,7 +39,7 @@ func getHttp(url string) string {
 	if err != nil {
 		return ""
 	}
-	
+
 	return string(body)
 }
 
@@ -83,14 +83,12 @@ func getRequestUrl(userid int, host string, port string) (maxsendid int, sendmes
 	urllist := make([]urlmessage, 0)
 
 	for i := range o.Friends {
-		
+
 		sendmessageid, urllist = send10(strconv.Itoa(userid), o.Friends[i], sendmessageid, host, port)
 		sendmessageurllist = append(sendmessageurllist, urllist...)
 	}
-	
-	randomshuffle(sendmessageurllist)
 
-	
+	randomshuffle(sendmessageurllist)
 
 	return sendmessageid, sendmessageurllist
 }
@@ -100,12 +98,11 @@ func send10(userid string, friendid string, sendmessageid int, host string, port
 	for i := 1; i <= 5; i++ {
 		sendmessageid += 1
 		url := "http://" + host + ":" + port + "/api/c/" + userid + "/" + friendid + "/" + strconv.Itoa(sendmessageid) + "/?message=" + strconv.Itoa(i)
-		
+
 		req := urlmessage{}
 		req.url = url
 		req.messageid = sendmessageid
 		list = append(list, req)
-		
 
 	}
 	maxsendid = sendmessageid
@@ -135,9 +132,9 @@ func SendRequest(id int, list []urlmessage, messageid int, host string, port str
 
 		// send all request
 		for i := range list {
-			
+
 			if list[i].messageid >= SendAckId {
-				
+
 				getHttp(list[i].url)
 			}
 		}
@@ -186,7 +183,6 @@ var minid *int
 var maxid *int
 
 const (
-	
 	Concurrency = 30
 )
 

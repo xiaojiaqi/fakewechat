@@ -129,7 +129,7 @@ func Test_Core_001(t *testing.T) {
 	id = 1
 	for i := range mhandler.Inbox {
 		if mhandler.Inbox[i].SendId != id {
-		//	fmt.Println(id, mhandler.Inbox[i].String())
+			//	fmt.Println(id, mhandler.Inbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
@@ -138,12 +138,12 @@ func Test_Core_001(t *testing.T) {
 	id = 1
 	for i := range mhandler.Outbox {
 		if mhandler.Outbox[i].SendId != id {
-		//	fmt.Println(id, mhandler.Outbox[i].String())
+			//	fmt.Println(id, mhandler.Outbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
 	}
- 
+
 }
 
 func Test_Core_002(t *testing.T) {
@@ -269,7 +269,7 @@ func Test_Core_002(t *testing.T) {
 	id = 1
 	for i := range mhandler.Inbox {
 		if mhandler.Inbox[i].SendId != id {
-	//		fmt.Println(id, mhandler.Inbox[i].String())
+			//		fmt.Println(id, mhandler.Inbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
@@ -278,7 +278,7 @@ func Test_Core_002(t *testing.T) {
 	id = 1
 	for i := range mhandler.Outbox {
 		if mhandler.Outbox[i].SendId != id {
-		//	fmt.Println(id, mhandler.Outbox[i].String())
+			//	fmt.Println(id, mhandler.Outbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
@@ -397,7 +397,7 @@ func Test_Core_003(t *testing.T) {
 	id = 1
 	for i := range mhandler.Inbox {
 		if mhandler.Inbox[i].SendId != id {
-	//		fmt.Println(id, mhandler.Inbox[i].String())
+			//		fmt.Println(id, mhandler.Inbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
@@ -406,10 +406,10 @@ func Test_Core_003(t *testing.T) {
 	id = 1
 	for i := range mhandler.Outbox {
 		if mhandler.Outbox[i].SendId != id {
-		//	fmt.Println(id, mhandler.Outbox[i].String())
+			//	fmt.Println(id, mhandler.Outbox[i].String())
 			panic("mhandler.Inbox[i].SendId != id")
 		}
 		id += 1
 	}
- 
+
 }
