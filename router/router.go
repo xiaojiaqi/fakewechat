@@ -140,7 +140,7 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:           ":8080",
+		Addr:           ":8089",
 		Handler:        regexpHandler,
 		ReadTimeout:    100 * time.Second,
 		WriteTimeout:   100 * time.Second,

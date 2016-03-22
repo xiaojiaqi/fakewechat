@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"strconv"
 	//"strings"
+	. "github.com/fakewechat/lib/monitor"
+	"time"
 )
 
+/*
 func GetUserFriendOutBoxName(i uint64) string {
 	//"F#outbox_#userid
 	return "F#outbox" + strconv.Itoa(int(i))
@@ -18,25 +21,68 @@ func GetUserFriendOutBoxName(i uint64) string {
 func GetUserFriendInBoxName(i uint64) string {
 	return "F#inbox" + strconv.Itoa(int(i))
 }
+*/
 
 func GetUserChatOutBoxName(i uint64) string {
-
 	return "C#outbox" + strconv.Itoa(int(i))
 }
 
 func GetUserChatInBoxName(i uint64) string {
-
 	return "C#inbox" + strconv.Itoa(int(i))
 }
 
+/*
 func GetUserChatInBoxQueueName(i uint64) string {
 	return "C#inboxqueue" + strconv.Itoa(int(i))
 }
-
+*/
 func GetUserInfoName(i uint64) string {
 	//fmt.Println("GetUserInfoName :", i)
 	return "user#" + strconv.Itoa(int(i))
 }
+
+func GetUserQueue(i uint64) string {
+	return "user#queue#" + strconv.Itoa(int(i))
+}
+
+func GetRawMessage(sendid uint64) string {
+	return "raw_" + strconv.Itoa(int(sendid))
+}
+func GetSendMessage(sendid uint64) string {
+	return "send_" + strconv.Itoa(int(sendid))
+}
+
+func GetLocalMessage(senderuserid uint64, sendid uint64) string {
+	return "local_" + strconv.Itoa(int(senderuserid)) + "_" + strconv.Itoa(int(sendid))
+}
+
+func GetAckMessage(sendid uint64) string {
+	return "ack_" + strconv.Itoa(int(sendid))
+}
+
+func GetQueueId(userid uint64, index uint64, LocalPostChannelSize uint64, MinLocalPostChannelSize uint64) int {
+	l := LocalPostChannelSize / MinLocalPostChannelSize
+	index1 := userid % l
+	r := index1*MinLocalPostChannelSize + index
+	return int(r)
+}
+
+/*
+func GetUserSendedQueue(i uint64) string {
+	//fmt.Println("GetUserInfoName :", i)
+	return "C#sended" + strconv.Itoa(int(i))
+}
+
+func GetUserRecvQueue(i uint64) string {
+	//fmt.Println("GetUserInfoName :", i)
+	return "C#recv" + strconv.Itoa(int(i))
+}
+
+func GetUserackQueue(i uint64) string {
+	//fmt.Println("GetUserInfoName :", i)
+	return "C#ack" + strconv.Itoa(int(i))
+}
+*/
 
 func GetReqdate(req *http.Request, key string) string {
 	value := ""
@@ -67,10 +113,14 @@ func GetIntValue(key string) int {
 }
 
 func UserFromRedis(in []byte) *UserInfor {
+
+	GMonitor.Add("UserFromRedis", 1)
+	t1 := time.Now().UnixNano()
 	user := &UserInfor{}
 
 	err := proto.Unmarshal(in, user)
-
+	t2 := time.Now().UnixNano()
+	GMonitor.Add64("UserFromRedis_time", t2-t1)
 	if err != nil {
 		fmt.Println(err)
 		panic("proto.Unmarshal(rawbyte, user)")
@@ -81,19 +131,19 @@ func UserFromRedis(in []byte) *UserInfor {
 		user.UserMap = make(map[uint64]*User)
 	}
 
-	if user.SendedQueue == nil || user.SendedQueue.MessageMap == nil {
-		user.SendedQueue = &SendQueue{}
-		user.SendedQueue.MessageMap = make(map[uint64]*GeneralMessage)
+	if user.SendedMessage == nil {
+		//user.SendedQueue = &SendQueue{}
+		user.SendedMessage = make(map[uint64]uint64)
 	}
 
-	if user.RecvedQueue == nil || user.RecvedQueue.MessageMap == nil {
-		user.RecvedQueue = &RecvQueue{}
-		user.RecvedQueue.MessageMap = make(map[uint64]*SendQueue)
+	if user.LocalMessage == nil {
+		//user.RecvedQueue = &RecvQueue{}
+		user.LocalMessage = make(map[uint64]*RecvQueue)
 	}
 
-	if user.AckedQueue == nil || user.AckedQueue.MessageMap == nil {
-		user.AckedQueue = &AckQueue{}
-		user.AckedQueue.MessageMap = make(map[uint64]*GeneralMessage)
+	if user.AckMessage == nil {
+		//user.AckedQueue = &AckQueue{}
+		user.AckMessage = make(map[uint64]uint64)
 	}
 	//fmt.Println(ToStrU(user))
 	//user.Userlist = &UserList{Uidlist: make([]*User, 0)}
@@ -136,7 +186,13 @@ func UserFromRedis(in []byte) *UserInfor {
 }
 
 func UserToRedis(u *UserInfor) []byte {
+	GMonitor.Add("UserToRedis", 1)
+	t1 := time.Now().UnixNano()
+
 	out, err := proto.Marshal(u)
+	t2 := time.Now().UnixNano()
+	GMonitor.Add64("UserToRedis_time", t2-t1)
+
 	if err != nil {
 		panic("UserToRedis failed")
 		return nil
@@ -182,12 +238,30 @@ func UserToRedis(u *UserInfor) []byte {
 }
 
 func MessageToRedis(u *GeneralMessage) []byte {
+	GMonitor.Add("MessageToRedis", 1)
+	t1 := time.Now().UnixNano()
 	out, err := proto.Marshal(u)
+	t2 := time.Now().UnixNano()
+	GMonitor.Add64("MessageToRedis_time", t2-t1)
 	if err != nil {
 		panic("MessageToRedis failed")
 		return nil
 	}
 	return out
+}
+
+func MessageFromRedis(in []byte) *GeneralMessage {
+	GMonitor.Add("MessageFromRedis", 1)
+	mess := &GeneralMessage{}
+	t1 := time.Now().UnixNano()
+	err := proto.Unmarshal(in, mess)
+	t2 := time.Now().UnixNano()
+	GMonitor.Add64("MessageFromRedis_time", t2-t1)
+	if err != nil {
+		panic("MessageFromRedis failed")
+		return nil
+	}
+	return mess
 }
 
 func ToStr(M *GeneralMessage) string {
@@ -203,25 +277,33 @@ func ToStrU(M *UserInfor) string {
 	s := " SendId:" + strconv.Itoa(int(M.SendId))
 	s += " SendAckId:" + strconv.Itoa(int(M.SendAckId))
 	s += " ReceiveId:" + strconv.Itoa(int(M.ReceiveId))
-	t := ""
-	for i := range M.SendedQueue.MessageMap {
-		t += strconv.Itoa(int(i)) + " "
-	}
-	s += " Send:[" + t + "]"
-
-	t = ""
-	for i := range M.RecvedQueue.MessageMap {
-		for k := range M.RecvedQueue.MessageMap[i].MessageMap {
-			t += strconv.Itoa(int(k)) + " "
+	/*
+		t := ""
+		for i := range M.SendedQueue.MessageMap {
+			t += strconv.Itoa(int(i)) + " "
 		}
-	}
-	s += " RecvedQueue:[" + t + "]"
+		s += " Send:[" + t + "]"
 
-	t = ""
-	for i := range M.AckedQueue.MessageMap {
-		t += strconv.Itoa(int(i)) + " "
-	}
-	s += " Acked:[" + t + "]"
+		t = ""
+		for i := range M.RecvedQueue.MessageMap {
+			for k := range M.RecvedQueue.MessageMap[i].MessageMap {
+				t += strconv.Itoa(int(k)) + " "
+			}
+		}
+		s += " RecvedQueue:[" + t + "]"
 
+		t = ""
+		for i := range M.AckedQueue.MessageMap {
+			t += strconv.Itoa(int(i)) + " "
+		}
+		s += " Acked:[" + t + "]"
+	*/
 	return s
+}
+
+// for mock
+func GetMockStoreKey(userid uint64, key string) string {
+	newkey := strconv.Itoa(int(userid)) + "_" + key
+	return newkey
+
 }

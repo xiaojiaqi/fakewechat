@@ -1,5 +1,9 @@
 package rg
 
+import (
+	"github.com/fakewechat/lib/flags"
+)
+
 const (
 	rgsize        = 100
 	rediscellsize = 2500
@@ -13,7 +17,7 @@ func GetRg(userid uint64) int {
 
 	// for Irregular we should use bitmap
 	id := int(userid) - 1
-	rg := id/rgsize + 1
+	rg := id / *flags.RgSize + 1
 	return rg
 }
 

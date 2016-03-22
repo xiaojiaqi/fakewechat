@@ -84,7 +84,35 @@ func (m *Monitor) InitNormalResign() {
 	m.Regist("DBwriteSuccess")
 	m.Regist("CLientSendRequest")      // gateway to localposter
 	m.Regist("LocalPosterRecvRequest") //  localposter get message
-	m.Regist("LocalPosterRecvAck")     //  localposter get ack
+
+	m.Regist("CLientSendRequest_time")
+	m.Regist("LocalPosterRecvRequest_time")
+	m.Regist("LocalPosterRecvAck_time")
+	m.Regist("UserFromRedis_time")
+	m.Regist("UserToRedis_time")
+	m.Regist("MessageToRedis_time")
+	m.Regist("MessageFromRedis_time")
+	m.Regist("GetUserInfo_time")
+
+	m.Regist("UpdateUserAndInbox_time")
+	m.Regist("UpdateUserAndOutbox_time")
+	m.Regist("GetRequest_time")
+	m.Regist("StoreRequest_time")
+	m.Regist("rpc_send_time")
+
+	m.Regist("CLientSendRequest")
+	m.Regist("LocalPosterRecvRequest")
+	m.Regist("LocalPosterRecvAck")
+	m.Regist("UserFromRedis")
+	m.Regist("UserToRedis")
+	m.Regist("MessageToRedis")
+	m.Regist("MessageFromRedis")
+	m.Regist("GetUserInfo")
+	m.Regist("UpdateUserAndInbox")
+	m.Regist("UpdateUserAndOutbox")
+	m.Regist("GetRequest")
+	m.Regist("StoreRequest")
+	m.Regist("rpc_send")
 
 }
 
@@ -168,6 +196,10 @@ func (m *Monitor) Report(host string) {
 }
 
 func (m *Monitor) Regist(k string) {
+	_, ok := m.mymaps[k]
+	if ok {
+		return
+	}
 	m.mymaps[k] = m.index
 	m.mymaps2[m.index] = k
 	m.index++

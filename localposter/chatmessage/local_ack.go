@@ -1,8 +1,8 @@
 package chatmessage
 
 import (
-	"fmt"
-	. "github.com/fakewechat/lib/utils"
+	//"fmt"
+	//. "github.com/fakewechat/lib/utils"
 	. "github.com/fakewechat/message"
 )
 
@@ -47,21 +47,28 @@ func CoreLocal_Ack(user *UserInfor, req *GeneralMessage) (result int) {
 
 	result = 0
 	client_cmd3 += 1
-	fmt.Println("client ", client_cmd3, ToStr(req))
+
+	_, ok := user.UserMap[req.SenderId]
+	if !ok {
+		panic("not exist friend") // we should drop it
+	}
+
+	//fmt.Println("client ", client_cmd3, ToStr(req), req.SendId, user.SendAckId )
 	if req.SendId <= user.SendAckId {
 		// do nothing
 		result = LOCALACK_SUCCESS_NOSYNC
 
 	} else if req.SendId == user.SendAckId+1 {
 		user.SendAckId += 1
-		fmt.Println("3000 ", user.SendId, user.SendAckId, user.ReceiveId)
-		delete(user.SendedQueue.MessageMap, req.SendId)
+		//fmt.Println("Delete 3000 ", user.SendId, user.SendAckId, user.ReceiveId)
+		delete(user.AckMessage, req.SendId)
+
 		result = LOCALACK_SUCCESS
 
 	} else {
-		_, ok := user.AckedQueue.MessageMap[req.SendId]
+		_, ok := user.AckMessage[req.SendId]
 		if !ok {
-			user.AckedQueue.MessageMap[req.SendId] = req // restore a message is too heavy, id is enough
+			user.AckMessage[req.SendId] = req.SendId // restore a message is too heavy, id is enough
 		}
 		result = LOCALACK_SUCCESS_NOSYNC
 	}
@@ -69,26 +76,31 @@ func CoreLocal_Ack(user *UserInfor, req *GeneralMessage) (result int) {
 }
 
 func SyncLocal_Ack(user *UserInfor, userid uint64) (result int) {
+
 	result = LOCALACK_SYNC_SUCCESS_NOSYNC
 
 	for {
 		newid := user.SendAckId + 1
-		_, ok := user.AckedQueue.MessageMap[newid]
+		_, ok := user.AckMessage[newid]
 		if ok {
 
-			delete(user.AckedQueue.MessageMap, newid)
+			delete(user.AckMessage, newid)
 			// also remove send queue
-			delete(user.SendedQueue.MessageMap, newid)
-			user.SendAckId += 1
-			fmt.Println("3000 ", user.SendId, user.SendAckId, user.ReceiveId)
+			delete(user.SendedMessage, newid)
+			//fmt.Println("delete ", newid)
+			//fmt.Println(user.AckMessage)
+			user.SendAckId = newid
+			//fmt.Println("3000 ", user.SendId, user.SendAckId, user.ReceiveId)
 			result = LOCALACK_SYNC_SUCCESS
 		} else {
+			//fmt.Println("delete ", newid, " not found")
 			break
 		}
 	}
 	return result
 }
 
+/*
 func CheckCoreLocal_Ack(r int) bool {
 
 	if (r == LOCALACK_SUCCESS) || (r == LOCALACK_SUCCESS_NOSYNC) {
@@ -108,3 +120,4 @@ func CheckSyncLocal_Ack(r int) bool {
 		panic("CheckCoreLocal_to_Local")
 	}
 }
+*/

@@ -1,7 +1,7 @@
 package chatmessage
 
 import (
-	"fmt"
+	//"fmt"
 	. "github.com/fakewechat/lib/utils"
 	. "github.com/fakewechat/message"
 )
@@ -53,118 +53,135 @@ func ProcessLocal_to_Local(req *GeneralMessage, Channelindex int) {
 */
 var client_cmd2 int
 
-func CoreLocal_to_Local(user *UserInfor, req *GeneralMessage) (result int, needupdateInBox bool) {
+// need refactor
 
-	result = 0
-	needupdateInBox = false
-	// find out the user
+//  无需存储消息
+//  无需更新userinfo
+//  只需要简单回复即可
+
+//  情况 1, 消息的 chatmessage 的sendid <= friend.ReceiveId,
+
+func CheckResponOnlyLocal_to_Local(user *UserInfor, req *GeneralMessage) bool {
+
+	//
 	SendIdofclient := req.Chatmessage.SendId
-	client_cmd2 += 1
-	fmt.Println("client ", client_cmd2, ToStr(req))
 
 	friend, ok := user.UserMap[req.SenderId]
 	if !ok {
 		panic("not exist friend") // we should drop it
 	}
-	/* for debug
-	if SendIdofclient > 5 {
-
-		fmt.Println(SendIdofclient, friend.ReceiveId)
-		panic("SendIdofclient > 5")
-	}*/
 
 	if friend.ReceiveId >= SendIdofclient {
-		// we need send a ack,
-		result = LOCAL_TO_LOCAL_SUCCESS
-	} else if friend.ReceiveId+1 == SendIdofclient { // good ! it it what we need
-		friend.ReceiveId += 1
-		needupdateInBox = true
-		user.ReceiveId += 1
-		/*
-			if friend.ReceiveId > 5 {
-				fmt.Println(SendIdofclient, friend.ReceiveId+1)
-				panic("firend.ReceiveId > 5")
-			}
-		*/
-		fmt.Println("2000 ", user.SendId, user.SendAckId, user.ReceiveId)
-
-		result = LOCAL_TO_LOCAL_SUCCESS
-	} else { //
-		recvQ, ok := user.RecvedQueue.MessageMap[req.SenderId] // find the
-		if !ok {
-			recvQ = &SendQueue{}
-			recvQ.MessageMap = make(map[uint64]*GeneralMessage)
-			user.RecvedQueue.MessageMap[req.SenderId] = recvQ
-		}
-		if recvQ.MessageMap == nil {
-			recvQ.MessageMap = make(map[uint64]*GeneralMessage)
-		}
-		_, reqexist := recvQ.MessageMap[SendIdofclient]
-		if !reqexist {
-
-			recvQ.MessageMap[SendIdofclient] = req
-		}
-
-		result = LOCAL_TO_LOCAL_SUCCESS_NOSEND
+		return true
+	} else {
+		return false
 	}
-
-	return result, needupdateInBox
 }
 
-func SyncLocal_to_Local(user *UserInfor, userid uint64) (int, *GeneralMessage) {
-	result := 0
-	var req *GeneralMessage
-	friend, ok := user.UserMap[userid]
+//  无需存储消息
+//  无需更新userinfo
+//  无需回应
+
+// 情况  LocalMessage 里面已经有了
+func CheckStoreagedLocal_to_Local(user *UserInfor, req *GeneralMessage) bool {
+
+	_, ok := user.UserMap[req.SenderId]
 	if !ok {
 		panic("not exist friend") // we should drop it
 	}
 
+	recvQ, ok := user.LocalMessage[req.SenderId] // find the friend
+	if !ok {
+		return false
+	}
+	SendIdofclient := req.Chatmessage.SendId
+
+	_, ok = recvQ.MessageMap[SendIdofclient]
+	if ok {
+		return true
+	} else {
+		return false
+	}
+}
+
+// 更新userinfor， 在recvQ 里面加一条记录
+//
+// 因为时序问题，可能存在 下次重做 别的线程已经完成的情况, needstorage = false 表明 不需要保存了
+// nosync 表明不需要去刷新了
+
+func StoreageLocal_to_Local(user *UserInfor, req *GeneralMessage) (needstorage bool, needsync bool) {
+	friend, ok := user.UserMap[req.SenderId]
+	if !ok {
+		panic("not exist friend") // we should drop it
+	}
+
+	recvQ, ok := user.LocalMessage[req.SenderId] // find the
+	if !ok {
+		recvQ = &RecvQueue{}
+		recvQ.MessageMap = make(map[uint64]uint64)
+		user.LocalMessage[req.SenderId] = recvQ
+	}
+
+	if recvQ.MessageMap == nil {
+
+		recvQ.MessageMap = make(map[uint64]uint64)
+	}
+
+	SendIdofclient := req.Chatmessage.SendId
+
+	_, ok = recvQ.MessageMap[SendIdofclient]
+	if !ok {
+
+		recvQ.MessageMap[SendIdofclient] = SendIdofclient
+		needstorage = true
+
+	} else {
+		needstorage = false
+	}
+
+	if SendIdofclient == friend.ReceiveId+1 {
+		needsync = true
+	}
+	return needstorage, needsync
+}
+
+//  如果结果不空, update 用户信息
+//  inbox update
+//  返回
+
+func SyncLocal_to_Local(user *UserInfor, senderId uint64) []string {
+	Result := make([]string, 0)
+
+	friend, ok := user.UserMap[senderId]
+	if !ok {
+		panic("not exist friend") // we should drop it
+	}
 	nextrecvid := friend.ReceiveId + 1
 
-	recvQ, ok := user.RecvedQueue.MessageMap[userid]
+	recvQ, ok := user.LocalMessage[senderId]
 	if !ok {
-		result = LOCAL_TO_LOCAL_SYNC_SUCCESS_NOSEND
-	} else {
-		ok := false
-		req, ok = recvQ.MessageMap[nextrecvid]
-		if ok {
+		return Result
+	}
+	for {
+		if recvQ.MessageMap == nil {
+			recvQ.MessageMap = make(map[uint64]uint64)
+		}
 
+		_, ok := recvQ.MessageMap[nextrecvid]
+
+		if ok {
+			friend.ReceiveId += 1
 			delete(recvQ.MessageMap, nextrecvid)
 
-			friend.ReceiveId += 1
-			/* for debug
-			if friend.ReceiveId > 5 {
-				fmt.Println(friend.ReceiveId, nextrecvid)
-				panic("firend.ReceiveId > 5")
-			} */
-
+			id := GetLocalMessage(senderId, nextrecvid)
+			Result = append(Result, id)
+			nextrecvid += 1
 			user.ReceiveId += 1
-			fmt.Println("2000 ", user.SendId, user.SendAckId, user.ReceiveId)
-			result = LOCAL_TO_LOCAL_SYNC_SUCCESS
 		} else {
-			req = nil
-			result = LOCAL_TO_LOCAL_SYNC_SUCCESS_NOSEND
+			break
 		}
+
 	}
-	return result, req
-
-}
-
-func CheckCoreLocal_to_Local(r int) bool {
-	if r == LOCAL_TO_LOCAL_SUCCESS || r == LOCAL_TO_LOCAL_SUCCESS_NOSEND {
-		return true
-	} else {
-		panic("CheckCoreLocal_to_Local")
-	}
-
-}
-
-// sync
-func CheckSyncLocal_to_Local(r int) bool {
-	if r == LOCAL_TO_LOCAL_SYNC_SUCCESS || r == LOCAL_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-		return true
-	} else {
-		panic("CheckSyncLocal_to_Local")
-	}
+	return Result
 
 }

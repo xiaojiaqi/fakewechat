@@ -9,6 +9,7 @@ message ChatMessage {
    uint64 SId = 1;     // machine sid
    uint64 SenderId = 2; // sender
    uint64 ReceiverId = 3; // chat message only
+   
    string MessageBody   = 4;
    uint64 RequesTtimeStamp = 5;
    uint64 SendId = 6; // the send id of  two user
@@ -28,12 +29,12 @@ message FriendGroupMessage {
 
 message GeneralMessage {
    int32  messageType =1;
-// 1 - 3  for chat
+  // 1 - 3  for chat
   // 1 for chat message client to local server    senderid = senderid  recvid = recvid, localserver 发现sendid和自己应该一样 不一样，说明有问题
   // 2 for chat message local server to local server  // sendid = sendid  如果 recvid 和本rg一样， 应该扔回队列 不一样 就发到poster
   // 3 for chat message ack from local server to local server
   // 用户拿到消息2以后，应该产生一个新的消息,sendindex == 2 的id, recvid = 2 的sendid, sendid = 2 的recvid
- // 根据recvid, 如果recvid 的rg 和本rg 一样，那么就发到本地的队列
+  // 根据recvid, 如果recvid 的rg 和本rg 一样，那么就发到本地的队列
   // 不一样，就找一个poster 发过去
 
   // 从队列里拿到
@@ -49,9 +50,11 @@ message GeneralMessage {
    uint64 SendId = 2; // the index of  client
    uint64 SenderId = 3;
    uint64 ReceiverId = 4;
-   ChatMessage  Chatmessage = 5;
-   FriendGroupMessage Friendgroupmessage = 6;
-   uint64  RequestTimeStamp = 7;  // the timestamp of enter A system, if a message liveing our system more than 50 second, it mean ,it is too old. we can drop it.
+   uint32 SenderRG = 5;
+   uint32 RecviverRG = 6;
+   ChatMessage  Chatmessage = 7;
+   //FriendGroupMessage Friendgroupmessage = ;
+   uint64  RequestTimeStamp = 8;  // the timestamp of enter A system, if a message liveing our system more than 50 second, it mean ,it is too old. we can drop it.
 
 }
 
@@ -62,6 +65,8 @@ message User {
      uint64   ReceiveId = 4;
 }
 
+// too heave
+/*
 message  SendQueue {
     // sendid => message
     map<uint64, GeneralMessage> MessageMap = 1;
@@ -76,19 +81,31 @@ message AckQueue {
     // sendid => message
     map<uint64, GeneralMessage> MessageMap = 1;
 }
+*/
 
+message recvQueue {
+    map<uint64, uint64> MessageMap = 1;
+}
 
 message UserInfor {
-     uint64 SendId    = 1; // how many messgae has been send
-     uint64 SendAckId = 2; // how many message has received alreay
-     uint64 ReceiveId = 3; // how many message received
-     uint64 ClientReceiveId  = 4; // the count of message that was client (also is sender) got from server received queue
-     //UserList userlist = 5;
-     map<uint64, User> UserMap = 5;
-     SendQueue   SendedQueue = 6;
-     RecvQueue   RecvedQueue = 7;
-     AckQueue     AckedQueue  = 8;
+     uint32 UserId    = 1; // 用户id
+
+     uint64 SendId    = 2; // how many messgae has been send
+     uint64 SendAckId = 3; // how many ack has received alreay,  
+     
+     uint64 ReceiveId = 4; // how many message received, 
+     
+     uint64 ClientReceiveId  = 5; // the count of message that was client (also is sender) got from server received queue
+     
+     
+     //UserList userlist = 6;
+     map<uint64, User> UserMap = 7;
+     map<uint64, uint64>  SendedMessage = 8;                 // sendid => sendid   dump to redis map   
+     map<uint64, recvQueue >  localMessage  = 9;             // userid => sendid   dump to redis map
+     map<uint64, uint64 > ackMessage  = 10;                   // sendid => sendid
 }
+
+
 
 message Thread {
      uint64 SId = 1;

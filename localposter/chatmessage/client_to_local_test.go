@@ -1,47 +1,335 @@
 package chatmessage
 
 import (
+	. "github.com/fakewechat/lib/utils"
 	. "github.com/fakewechat/message"
 	"testing"
-
-	//"fmt"
-	"math/rand"
-	"time"
+	//"math/rand"
+	//"time"
+	"fmt"
 )
+
+const Receiverid uint64 = 1
 
 //
 // normal test
 //
-func Test_send100(t *testing.T) {
+func Test_CheckDropMessageClient_to_Local(t *testing.T) {
 
 	user := &UserInfor{}
 	user.SendId = 100
-
-	user.UserMap = make(map[uint64]*User)
-	onefriend := &User{}
-	onefriend.UserId = 1
-	onefriend.SendId = 30
-
-	user.SendedQueue = &SendQueue{}
-	user.SendedQueue.MessageMap = make(map[uint64]*GeneralMessage)
-
-	user.UserMap[1] = onefriend
+	user.SendAckId = 100
 
 	req := &GeneralMessage{}
-	req.SendId = 101
-	req.ReceiverId = 1
+	req.SendId = 100
+	req.ReceiverId = Receiverid
 
 	chat := &ChatMessage{}
-	chat.ReceiverId = 1
+	chat.ReceiverId = Receiverid
 
 	req.Chatmessage = chat
 
-	result, needupdate := CoreClient_to_Local(user, req)
-	if result != CLIENT_TO_LOCAL_SUCCESS {
-		t.Error("CoreClient_to_Local  send 100 error, result")
+	result := CheckDropMessageClient_to_Local(user, req)
+	if result != true {
+		t.Error("CheckDropMessageClient_to_Local   ")
 	}
-	if needupdate != true {
-		t.Error("CoreClient_to_Local  send 100 error, needupdate ")
+}
+
+func Test_CheckDropMessageClient_to_Local_failed(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+
+	req := &GeneralMessage{}
+	req.SendId = 101
+	req.ReceiverId = Receiverid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckDropMessageClient_to_Local(user, req)
+	if result != false {
+		t.Error("Test_CheckDropMessageClient_to_Local_failed   ")
+	}
+
+}
+
+func Test_CheckResendMessageClient_to_Local(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 80
+
+	req := &GeneralMessage{}
+	req.SendId = 81
+	req.ReceiverId = Receiverid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckResendMessageClient_to_Local(user, req)
+	if result != true {
+		t.Error("Test_CheckResendMessageClient_to_Local   ")
+	}
+
+}
+
+func Test_CheckResendMessageClient_to_Local2(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+
+	req := &GeneralMessage{}
+	req.SendId = 81
+	req.ReceiverId = Receiverid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckResendMessageClient_to_Local(user, req)
+	if result != true {
+		t.Error("Test_CheckResendMessageClient_to_Local2   ")
+	}
+
+}
+
+func Test_CheckResendMessageClient_to_Local3(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+
+	req := &GeneralMessage{}
+	req.SendId = 101
+	req.ReceiverId = Receiverid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckResendMessageClient_to_Local(user, req)
+	if result != false {
+		t.Error("Test_CheckResendMessageClient_to_Local3   ")
+	}
+
+}
+
+func Test_CheckStoragedMessageClient_to_Local1(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+
+	user.UserMap[senderid] = onefriend
+
+	user.SendedMessage[101] = senderid
+
+	req := &GeneralMessage{}
+	req.SendId = 101
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckStoragedMessageClient_to_Local(user, req)
+	if result != true {
+		t.Error("Test_CheckStoragedMessageClient_to_Local1   ")
+	}
+
+}
+
+func Test_CheckStoragedMessageClient_to_Local2(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+
+	user.UserMap[senderid] = onefriend
+
+	user.SendedMessage[101] = senderid
+
+	req := &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	result := CheckStoragedMessageClient_to_Local(user, req)
+	if result != false {
+		t.Error("Test_CheckStoragedMessageClient_to_Local   ")
+	}
+
+}
+
+func Test_StorageMessageClient_to_Local1(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+
+	user.UserMap[senderid] = onefriend
+
+	user.SendedMessage[103] = senderid
+
+	req := &GeneralMessage{}
+	req.SendId = 101
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	storage, sync := StorageMessageClient_to_Local(user, req)
+	fmt.Println(storage, sync)
+	if (storage != true) || sync != true {
+		t.Error("StorageMessageClient_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 102
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	storage, sync = StorageMessageClient_to_Local(user, req)
+
+	if (storage != true) || sync != false {
+		t.Error("StorageMessageClient_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 101
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+
+	req.Chatmessage = chat
+
+	storage, sync = StorageMessageClient_to_Local(user, req)
+
+	if (storage != false) || sync != false {
+		t.Error("StorageMessageClient_to_Local   ")
+	}
+
+}
+
+func Test_SyncClient_to_Local1(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+
+	user.UserMap[senderid] = onefriend
+
+	user.SendedMessage[101] = senderid
+	user.SendedMessage[102] = senderid
+	user.SendedMessage[103] = senderid
+	user.SendedMessage[104] = senderid
+
+	list := SyncClient_to_Local(user)
+
+	if len(list) != 4 && len(user.SendedMessage) != 0 && user.SendId != 104 && onefriend.SendId != 34 {
+		t.Error("SyncClient_to_Local   ")
+	}
+	var index uint64 = 101
+	for i := range list {
+		if list[i].Rawname != GetRawMessage(index) && list[i].Sendname != GetSendMessage(index) {
+			t.Error("SyncClient_to_Local   ")
+		}
+		index += 1
+
+	}
+
+}
+
+func Test_SyncClient_to_Local2(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+
+	//onefriend := &User{}
+	//onefriend.UserId = Receiverid
+	//onefriend.SendId = 30
+
+	//user.UserMap[senderid] = onefriend
+
+	user.SendedMessage[101] = senderid
+	user.SendedMessage[102] = senderid
+	user.SendedMessage[103] = senderid
+	user.SendedMessage[104] = senderid
+
+	defer func() {
+		if r := recover(); r != nil {
+
+		} else {
+			t.Error("SyncClient_to_Local   ")
+		}
+	}()
+
+	list := SyncClient_to_Local(user)
+	if len(list) != 0 {
+		t.Error("SyncClient_to_Local   ")
 	}
 
 }
@@ -49,6 +337,7 @@ func Test_send100(t *testing.T) {
 //
 // don't send data,
 //
+/*
 func Test_send100_notsend(t *testing.T) {
 
 	user := &UserInfor{}
@@ -57,14 +346,16 @@ func Test_send100_notsend(t *testing.T) {
 
 	user.UserMap = make(map[uint64]*User)
 
+
 	onefriend := &User{}
 	onefriend.UserId = 1
 	onefriend.SendId = 30
 
 	user.UserMap[1] = onefriend
 
-	user.SendedQueue = &SendQueue{}
+    user.SendedQueue = &SendQueue{}
 	user.SendedQueue.MessageMap = make(map[uint64]*GeneralMessage)
+
 
 	req := &GeneralMessage{}
 	req.SendId = 109
@@ -75,7 +366,7 @@ func Test_send100_notsend(t *testing.T) {
 
 	req.Chatmessage = chat
 
-	user.SendedQueue.MessageMap[109] = req
+    user.SendedQueue.MessageMap[109] = req
 
 	result, needupdate := CoreClient_to_Local(user, req)
 	if result != CLIENT_TO_LOCAL_SUCCESS_NOSEND {
@@ -106,6 +397,7 @@ func Test_send100_sendagain(t *testing.T) {
 	user.SendedQueue = &SendQueue{}
 	user.SendedQueue.MessageMap = make(map[uint64]*GeneralMessage)
 
+
 	req := &GeneralMessage{}
 	req.SendId = 101
 	req.ReceiverId = 1
@@ -114,7 +406,7 @@ func Test_send100_sendagain(t *testing.T) {
 	chat.ReceiverId = 1
 
 	req.Chatmessage = chat
-	user.SendedQueue.MessageMap[101] = req
+    user.SendedQueue.MessageMap[101] = req
 	result, needupdate := CoreClient_to_Local(user, req)
 	if result != CLIENT_TO_LOCAL_SUCCESS {
 		t.Error("CoreClient_to_Local  send 100 sendagain error, result")
@@ -208,6 +500,9 @@ func Test_sync_nosend(t *testing.T) {
 	}
 }
 
+*/
+
+/*
 func Test_sync_end3times(t *testing.T) {
 
 	user := &UserInfor{}
@@ -321,12 +616,7 @@ func Test_sync_end3times(t *testing.T) {
 			}
 
 		}
-		/* leak this bug
-		_, ok := user.SendedQueue.MessageMap[112]
-		if ok {
-			t.Error("CoreClient_to_Local Test_sync_end3times case 2 error, still in queue")
-		}
-		*/
+
 
 	}
 
@@ -355,12 +645,7 @@ func Test_sync_end3times(t *testing.T) {
 				t.Error("CoreClient_to_Local  Test_sync_end3times case 2 error,  no such user 3?? ")
 			}
 		}
-		/*
-			_, ok := user.SendedQueue.MessageMap[113]
-			if ok {
-				t.Error("CoreClient_to_Local Test_sync_end3times case 2 error, still in queue")
-			}
-		*/
+
 	}
 
 	// 114
@@ -389,12 +674,7 @@ func Test_sync_end3times(t *testing.T) {
 		}
 
 	}
-	/*
-		_, ok := user.SendedQueue.MessageMap[114]
-		if ok {
-			t.Error("CoreClient_to_Local Test_sync_end3times case 3 error, still in queue")
-		}
-	*/
+
 	// 116
 	{
 		result, sendreq := SyncClient_to_Local(user)
@@ -434,18 +714,17 @@ func Test_sync_end3times(t *testing.T) {
 
 		}
 
-		/*
-			_, ok := user.SendedQueue.MessageMap[116]
-			if !ok {
-				t.Error("CoreClient_to_Local Test_sync_end3times case 4 error, still in queue")
-			}
-		*/
+
 	}
 }
+
+*/
 
 //
 // normal random test
 //
+
+/*
 func Test_randsend100(t *testing.T) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -520,11 +799,7 @@ func Test_randsend100(t *testing.T) {
 		t.Error("CoreClient_to_Local randsend100 error, newid != 201 ")
 	}
 
-	/*
-		if len(user.SendedQueue.MessageMap) != 0 {
-			t.Error("CoreClient_to_Local randsend100 error, user.SendedQueue)  != 0")
-		}
-	*/
+
 	if user.SendId != 200 {
 		t.Error("CoreClient_to_Local randsend100 error, user.Sendid != 200")
 	}
@@ -534,10 +809,12 @@ func Test_randsend100(t *testing.T) {
 	}
 
 }
+*/
 
 //
 // normal random test 2
 //
+/*
 func Test_randsend100_2(t *testing.T) {
 	//s1 := rand.NewSource(time.Now().UnixNano())
 	//r1 := rand.New(s1)
@@ -615,11 +892,7 @@ func Test_randsend100_2(t *testing.T) {
 	if newid != 201 {
 		t.Error("CoreClient_to_Local randsend100_2 error, newid != 201 ")
 	}
-	/*
-		if len(user.SendedQueue.MessageMap) != 0 {
-			t.Error("CoreClient_to_Local randsend100_2 error, user.SendedQueue)  != 0")
-		}
-	*/
+
 	if user.SendId != 200 {
 		t.Error("CoreClient_to_Local randsend100_2 error, user.Sendid != 200")
 	}
@@ -629,3 +902,4 @@ func Test_randsend100_2(t *testing.T) {
 	}
 
 }
+*/

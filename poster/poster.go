@@ -31,7 +31,7 @@ type PosterAPI int
 var counter uint32
 
 func (t *PosterAPI) PosterMessage(Req *GeneralMessage, id *uint64) error {
-	fmt.Println("(t *PosterAPI) PosterMessage(Req *GeneralMessage, id *uint64)")
+	//fmt.Println("(t *PosterAPI) PosterMessage(Req *GeneralMessage, id *uint64)")
 	s := atomic.AddUint32(&counter, 1)
 	channelId := s % PostWorkThreadSize
 	err := PushtoQueue(&channel[channelId], Req)
@@ -42,7 +42,7 @@ func (t *PosterAPI) PosterMessage(Req *GeneralMessage, id *uint64) error {
 		return err
 	}
 	GMonitor.Add("PostRequest", 1)
-	fmt.Println("PushtoQueue(&channel[channelId], Req) success")
+	//fmt.Println("PushtoQueue(&channel[channelId], Req) success")
 
 	return nil
 }
@@ -58,7 +58,7 @@ func ProcessRequest(channel *chan *GeneralMessage, Channelindex int) {
 }
 
 func DispatchToServer(req *GeneralMessage, Channelindex int) {
-
+	//fmt.Println("Dispathc ", req)
 	if req.MessageType == CHAT_CLIENT_TO_LOCALPOST {
 		panic("get request  CHAT_CLIENT_TO_LOCALPOST")
 	} else if req.MessageType == CHAT_LOCALPOST_TO_LOCALPOST || req.MessageType == CHAT_LOCALPOST_ACK {
@@ -83,12 +83,12 @@ func forwardChatMessage(req *GeneralMessage, Channelindex int) {
 	}
 
 	if client == nil {
-		fmt.Println("no client found xxx! send")
+		fmt.Println("no client found xxx! send ", req)
 		return
 	}
 
 	defer GloabalClientPool[Channelindex].ReturnClient(client)
-	fmt.Println("forwardChatMessage index ", Channelindex)
+	//fmt.Println("forwardChatMessage index ", Channelindex)
 	rpcclient := client.GetRPCClient()
 	if rpcclient == nil {
 		panic("rpcclient is nil")

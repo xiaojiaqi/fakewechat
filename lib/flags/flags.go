@@ -57,9 +57,9 @@ func Parse() {
 	SnId = flag.Uint("snid", 1, "snid")
 
 	CellId = flag.Int("cellid", 1, "cellid")
-
-	RouterServerURL = flag.String("routeserverurl", "http://0.0.0.0.:8080/server", "route server url")
-	RouterRegistURL = flag.String("routeregisturl", "http://0.0.0.0.:8080/regist/", "route regist url")
+	RgSize = flag.Int("rgsize", 2500, "rgsize")
+	RouterServerURL = flag.String("routeserverurl", "http://0.0.0.0:8080/server", "route server url")
+	RouterRegistURL = flag.String("routeregisturl", "http://0.0.0.0:8080/regist/", "route regist url")
 	flag.Parse()
 	Print()
 }

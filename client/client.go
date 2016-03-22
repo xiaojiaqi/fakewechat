@@ -29,7 +29,7 @@ func getHttp(url string) string {
 	client := http.Client{
 		Transport: &transport,
 	}
-
+	//fmt.Println(url)
 	resp, err := client.Get(url)
 	if err != nil {
 		return ""
@@ -139,12 +139,12 @@ func SendRequest(id int, list []urlmessage, messageid int, host string, port str
 			}
 		}
 
-		for i := 0; i < 45; i++ {
+		for i := 0; i < 10; i++ {
 			o := getUserInfo(id, host, port)
 
 			if o != nil {
 
-				fmt.Println("userid =", id, o.SendId, o.ReceiveId, o.SendAckId, messageid)
+				//fmt.Println("userid =", id, o.SendId, o.ReceiveId, o.SendAckId, messageid)
 				SendAckId = o.SendAckId
 				if o.SendId == o.SendAckId && o.SendAckId == messageid {
 					sendsucc = true
@@ -156,7 +156,7 @@ func SendRequest(id int, list []urlmessage, messageid int, host string, port str
 				}
 			}
 
-			time.Sleep(10 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 
 		if sendsucc == true {
@@ -183,7 +183,7 @@ var minid *int
 var maxid *int
 
 const (
-	Concurrency = 30
+	Concurrency = 300
 )
 
 func makeRequest(ch *chan urlRequest) {
@@ -266,7 +266,7 @@ func main() {
 	maxid = flag.Int("maxid", 2500, "maxid")
 
 	flag.Parse()
-
+	t := time.Now().Unix()
 	var channel chan urlRequest
 	var checkchannel chan urlRequest
 	channel = make(chan urlRequest, 999)
@@ -277,7 +277,7 @@ func main() {
 	}
 
 	for {
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 		lock.Lock()
 		fmt.Println("processed == requests", processed, requests)
 		if processed == requests {
@@ -290,5 +290,5 @@ func main() {
 	}
 
 	CheckUserData(&checkchannel)
-
+	fmt.Println("spend ", time.Now().Unix()-t)
 }

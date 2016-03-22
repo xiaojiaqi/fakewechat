@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	. "github.com/fakewechat/lib/contstant"
 	. "github.com/fakewechat/lib/utils"
 	. "github.com/fakewechat/localposter/chatmessage"
@@ -20,163 +21,257 @@ import (
 
 
 */
-func ProcessClient_to_Local_Message(handler ProcessHandler, req *GeneralMessage) {
+
+const (
+	CHAT_CLIENT_DROPED                 = 1001
+	CHAT_CLIENT_RESEND                 = 1002
+	CHAT_CLIENT_NONEEDSTORE            = 1003
+	CHAT_CLIENT_STORE                  = 1004
+	CHAT_CLIENT_STORE_NOSYNC           = 1005
+	CHAT_CLIENT_SYNC_NOREQUESTNEEDSEND = 1006
+	CHAT_CLIENT_SYNC_ANDSEND           = 1007
+
+	//CHAT_LOCALPOST_TO_LOCALPOST = 2000
+	CHAT_LOCAL_RESPONSEONLY      = 2001
+	CHAT_LOCAL_DROP              = 2002
+	CHAT_LOCAL_STOREONLY         = 2003
+	CHAT_LOCAL_NOMESSAGENEEDSEND = 2004
+	CHAT_LOCAL_MESSAGENEEDSEND   = 2005
+	//CHAT_LOCALPOST_ACK          = 3000
+
+	CHAT_ACK_NOSYNC = 3001
+	CHAT_ACK_SYNC   = 3002
+)
+
+func ProcessClient_to_Local_Message(handler ProcessHandler, req *GeneralMessage) int {
 
 	senderId := req.SenderId
+	needsync := false
 
-	result := 0
-	needupdateOutbox := false
+	//fmt.Println("ProcessClient_to_Local_Message ", req)
 	for {
-		handler.Watch2(GetUserInfoName(senderId), GetUserChatOutBoxName(senderId))
-
+		handler.Watch1(GetUserInfoName(senderId))
 		user := handler.GetUserInfo(senderId)
 
+		if CheckDropMessageClient_to_Local(user, req) {
+			handler.UnWatch1(GetUserInfoName(senderId))
+
+			//fmt.Println("CheckDropMessageClient_to_Local ", req)
+			return CHAT_CLIENT_DROPED
+		}
+
+		if CheckResendMessageClient_to_Local(user, req) {
+			handler.UnWatch1(GetUserInfoName(senderId))
+
+			// get Req
+			mewreq := handler.GetRequest(senderId, GetSendMessage(req.SendId))
+			// send
+
+			//fmt.Println("CheckResendMessageClient_to_Local(user, req)")
+			handler.SendRequest(mewreq)
+
+			return CHAT_CLIENT_RESEND
+		}
+		if CheckStoragedMessageClient_to_Local(user, req) {
+			handler.UnWatch1(GetUserInfoName(senderId))
+
+			//fmt.Println("!CheckStoragedMessageClient_to_Local(user, req)")
+			return CHAT_CLIENT_NONEEDSTORE
+		}
+
+		_, needsync = StorageMessageClient_to_Local(user, req)
+
+		// store the message to map
+		key := GetRawMessage(req.SendId)
+		handler.StoreRequest(senderId, key, req)
+
+		b, _ := handler.UpdateUser(senderId, user)
+		if !b {
+			continue
+		} else {
+			break
+		}
+
+	}
+
+	//fmt.Println("needsync", needsync)
+	if !needsync {
+
+		return CHAT_CLIENT_STORE_NOSYNC
+	}
+
+	//fmt.Println("sync: ")
+
+	// for less
+	for {
+		handler.Watch2(GetUserInfoName(senderId), GetUserChatOutBoxName(senderId))
+		user := handler.GetUserInfo(senderId)
 		if user == nil {
 			continue
 		}
 
-		result, needupdateOutbox = CoreClient_to_Local(user, req)
-		CheckCoreClient_to_Local(result)
+		list := SyncClient_to_Local(user)
+		if len(list) == 0 {
+			handler.UnWatch2(GetUserInfoName(senderId), GetUserChatOutBoxName(senderId))
 
-		if result == CLIENT_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-			break
-		}
-		updated := false
-		if needupdateOutbox {
-			updated = handler.UpdateUserAndOutbox(senderId, user, req)
-		} else {
-			updated = handler.UpdateUser(senderId, user)
-		}
-		if !updated {
-			continue
-		} else {
-			break
-		}
-	}
-
-	if result == CLIENT_TO_LOCAL_SUCCESS_NOSEND {
-		return
-	}
-
-	// send message
-	req.MessageType = CHAT_LOCALPOST_TO_LOCALPOST
-	handler.SendRequest(req)
-
-	for {
-		handler.Watch2(GetUserInfoName(senderId), GetUserChatOutBoxName(senderId))
-		user := handler.GetUserInfo(senderId)
-		if user == nil {
-			continue
+			return CHAT_CLIENT_SYNC_NOREQUESTNEEDSEND
 		}
 
-		result, req := SyncClient_to_Local(user)
-		if result == CLIENT_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-			break
-		} else if result == CLIENT_TO_LOCAL_SYNC_SUCCESS {
-			if !handler.UpdateUserAndOutbox(senderId, user, req) {
-				continue
+		reqlist := make([]*GeneralMessage, 0)
+
+		for i := range list {
+			key := list[i].Rawname
+			newkey := list[i].Sendname
+			newReq := handler.GetRequest(senderId, key)
+			//fmt.Println(list[i])
+			newReq.Chatmessage.SendId = list[i].Chatmessagesendid
+			newReq.MessageType = CHAT_LOCALPOST_TO_LOCALPOST
+			reqlist = append(reqlist, newReq)
+			handler.StoreRequest(senderId, newkey, newReq)
+
+		}
+		b, _ := handler.UpdateUserAndOutbox(senderId, user, reqlist)
+		if b {
+
+			for i := range reqlist {
+				handler.SendRequest(reqlist[i])
+
 			}
-			req.MessageType = CHAT_LOCALPOST_TO_LOCALPOST
-			handler.SendRequest(req)
+			return CHAT_CLIENT_SYNC_ANDSEND
 		} else {
-			panic("unexpected error")
+			continue
 		}
+
 	}
 
 }
 
-func ProcessLocal_to_Local_Message(handler ProcessHandler, req *GeneralMessage) {
+func makeAckMessage(req *GeneralMessage) *GeneralMessage {
+
+	ack := &GeneralMessage{}
+	*ack = *req
+
+	tmpReceiverId := ack.ReceiverId
+	ack.ReceiverId = ack.SenderId
+	ack.SenderId = tmpReceiverId
+	ack.MessageType = CHAT_LOCALPOST_ACK
+	return ack
+}
+
+func ProcessLocal_to_Local_Message(handler ProcessHandler, req *GeneralMessage) int {
 
 	receiverId := req.ReceiverId
 	senderId := req.SenderId
-
-	result := 0
-	needupdateInbox := false
+	needsync := false
+	needstorage := false
 	for {
-		handler.Watch2(GetUserInfoName(receiverId), GetUserChatInBoxName(receiverId))
-		user := handler.GetUserInfo(receiverId)
-		if user == nil {
-			continue
-		}
-
-		result, needupdateInbox = CoreLocal_to_Local(user, req)
-		CheckCoreLocal_to_Local(result)
-		updated := false
-
-		if needupdateInbox == true {
-			updated = handler.UpdateUserAndInbox(receiverId, user, req)
-		} else {
-			updated = handler.UpdateUser(receiverId, user)
-		}
-
-		if !updated {
-			continue
-		} else {
-			break
-		}
-	}
-
-	if result == LOCAL_TO_LOCAL_SUCCESS_NOSEND {
-		return
-	}
-	// send message
-	// req need exchange sender and receiver
-	tmpReceiverId := req.ReceiverId
-	req.ReceiverId = req.SenderId
-	req.SenderId = tmpReceiverId
-	req.MessageType = CHAT_LOCALPOST_ACK
-
-	handler.SendRequest(req)
-	//
-	for {
-		handler.Watch2(GetUserInfoName(receiverId), GetUserChatInBoxName(receiverId))
+		handler.Watch1(GetUserInfoName(receiverId))
 		user := handler.GetUserInfo(receiverId)
 
-		if user == nil {
-			continue
+		if CheckResponOnlyLocal_to_Local(user, req) {
+
+			ack := makeAckMessage(req)
+			handler.SendRequest(ack)
+
+			handler.UnWatch1(GetUserInfoName(receiverId))
+			return CHAT_LOCAL_RESPONSEONLY
+
 		}
 
-		result, req := SyncLocal_to_Local(user, senderId)
+		if CheckStoreagedLocal_to_Local(user, req) {
+			handler.UnWatch1(GetUserInfoName(receiverId))
+			return CHAT_LOCAL_DROP
+		}
 
-		CheckSyncLocal_to_Local(result)
+		needstorage, needsync = StoreageLocal_to_Local(user, req)
 
-		if result == LOCAL_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-			break
-		} else if result == LOCAL_TO_LOCAL_SYNC_SUCCESS {
-			if !handler.UpdateUserAndInbox(receiverId, user, req) {
+		if needstorage {
+			// store the message to map
+			key := GetLocalMessage(senderId, req.Chatmessage.SendId)
+			handler.StoreRequest(receiverId, key, req)
+
+			b, _ := handler.UpdateUser(receiverId, user)
+			if !b {
 				continue
+			} else {
+				break
 			}
 
-			tmpReceiverId := req.ReceiverId
-			req.ReceiverId = req.SenderId
-			req.SenderId = tmpReceiverId
-			req.MessageType = CHAT_LOCALPOST_ACK
-			handler.SendRequest(req)
-
 		} else {
-			panic("")
+			handler.UnWatch1(GetUserInfoName(receiverId))
+			break
 		}
 	}
+
+	if !needsync {
+		return CHAT_LOCAL_STOREONLY
+	}
+
+	for {
+		handler.Watch2(GetUserInfoName(receiverId), GetUserChatInBoxName(receiverId))
+		user := handler.GetUserInfo(receiverId)
+		if user == nil {
+			continue
+		}
+
+		list := SyncLocal_to_Local(user, senderId)
+		if len(list) == 0 {
+			handler.UnWatch2(GetUserInfoName(receiverId), GetUserChatInBoxName(receiverId))
+
+			return CHAT_LOCAL_NOMESSAGENEEDSEND
+		}
+
+		reqlist := make([]*GeneralMessage, 0)
+
+		for i := range list {
+			key := list[i]
+			newReq := handler.GetRequest(receiverId, key)
+
+			reqlist = append(reqlist, newReq)
+		}
+		b, _ := handler.UpdateUserAndInbox(receiverId, user, reqlist)
+		if b {
+
+			for i := range reqlist {
+				newReq := reqlist[i]
+				newReq = makeAckMessage(newReq)
+
+				handler.SendRequest(newReq)
+
+			}
+
+			return CHAT_LOCAL_MESSAGENEEDSEND
+		} else {
+			continue
+		}
+
+	}
+	return CHAT_LOCAL_MESSAGENEEDSEND
+
 }
 
-func ProcessLocal_ack_Message(handler ProcessHandler, req *GeneralMessage) {
+func ProcessLocal_ack_Message(handler ProcessHandler, req *GeneralMessage) int {
 
 	receiverId := req.ReceiverId
 	senderid := req.SenderId
 
 	result := 0
+
 	for {
-		handler.Watch(GetUserInfoName(receiverId))
+		handler.Watch1(GetUserInfoName(receiverId))
 		user := handler.GetUserInfo(receiverId)
 
 		if user == nil {
+			panic(" user == nil")
 			continue
 		}
 
 		result = CoreLocal_Ack(user, req)
+		//CheckCoreLocal_Ack(result)
 
-		CheckCoreLocal_Ack(result)
-		if !handler.UpdateUser(receiverId, user) {
+		succ, _ := handler.UpdateUser(receiverId, user)
+		if !succ {
+			fmt.Println("handler.UpdateUser(receiverId, user)")
 			continue
 		} else {
 			break
@@ -184,29 +279,35 @@ func ProcessLocal_ack_Message(handler ProcessHandler, req *GeneralMessage) {
 	}
 
 	if result == LOCALACK_SUCCESS_NOSYNC {
-		return
+		return CHAT_ACK_NOSYNC
 	}
 
+	var user *UserInfor
 	for {
-		handler.Watch(GetUserInfoName(receiverId))
-		user := handler.GetUserInfo(receiverId)
+		handler.Watch1(GetUserInfoName(receiverId))
+		user = handler.GetUserInfo(receiverId)
 
 		if user == nil {
+			panic(" user == nil")
 			continue
 		}
 
 		result := SyncLocal_Ack(user, senderid)
-		CheckSyncLocal_Ack(result)
+		//CheckSyncLocal_Ack(result)
 
 		if result == LOCALACK_SYNC_SUCCESS_NOSYNC {
+			handler.UnWatch1(GetUserInfoName(receiverId))
 			break
 		} else if result == LOCALACK_SYNC_SUCCESS {
-			if !handler.UpdateUser(receiverId, user) {
+			succ, _ := handler.UpdateUser(receiverId, user)
+			if !succ {
+				fmt.Println("succ, _ := handler.UpdateUser(receiverId, user)")
 				continue
 			} else {
 				break
 			}
 		}
 	}
+	return CHAT_ACK_SYNC
 
 }

@@ -1,136 +1,393 @@
 package chatmessage
 
 import (
+	"fmt"
 	. "github.com/fakewechat/message"
-	"math/rand"
 	"testing"
-	"time"
+	//"math/rand"
+	//"time"
 )
 
 //
 // normal test
 //
 
-func Test_Local_to_local100(t *testing.T) {
+func Test_CheckResponOnlyLocal_to_Local(t *testing.T) {
 
-	user := &UserInfor{} //userid = 1
-	user.SendId = 300
-
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
 	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+	user.LocalMessage = make(map[uint64]*RecvQueue)
+
 	onefriend := &User{}
-	onefriend.UserId = 400
+	onefriend.UserId = Receiverid
 	onefriend.SendId = 30
-	onefriend.ReceiveId = 60
+	onefriend.ReceiveId = 100
 
-	user.UserMap[400] = onefriend
+	user.UserMap[senderid] = onefriend
 
-	req := &GeneralMessage{} // message sender == 400
-	req.SendId = 1101
-	req.ReceiverId = 1
-	req.SendId = 100
-	req.SenderId = 400
+	req := &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
 
 	chat := &ChatMessage{}
-	chat.ReceiverId = 1
-	chat.SendId = 61
+	chat.ReceiverId = Receiverid
+	chat.SendId = 29
+
 	req.Chatmessage = chat
 
-	result, needupdatRecvQueue := CoreLocal_to_Local(user, req)
-	if result != LOCAL_TO_LOCAL_SUCCESS {
-		t.Error("CoreClient_to_Local  Test_Local_to_local100 error, result")
+	result := CheckResponOnlyLocal_to_Local(user, req)
+
+	if result != true {
+		t.Error("CheckResponOnlyLocal_to_Local   ")
 	}
-	if needupdatRecvQueue != true {
-		t.Error("CoreClient_to_Local  Test_Local_to_local100 error, needupdatRecvQueue ")
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 111
+
+	req.Chatmessage = chat
+
+	result = CheckResponOnlyLocal_to_Local(user, req)
+
+	if result != false {
+		t.Error("CheckResponOnlyLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = 1234
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 111
+
+	req.Chatmessage = chat
+
+	defer func() {
+		if r := recover(); r != nil {
+
+		} else {
+			t.Error("CheckResponOnlyLocal_to_Local   ")
+		}
+	}()
+
+	result = CheckResponOnlyLocal_to_Local(user, req)
+
+	if result != false {
+		t.Error("CheckResponOnlyLocal_to_Local   ")
 	}
 }
 
-func Test_Local_to_local2002(t *testing.T) {
+func Test_CheckStoreagedLocal_to_Local(t *testing.T) {
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
-	user := &UserInfor{} //userid = 1
-	user.SendId = 300
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
 
 	user.UserMap = make(map[uint64]*User)
-	user.SendedQueue = &SendQueue{MessageMap: make(map[uint64]*GeneralMessage)} //    `protobuf:"bytes,6,opt" json:"SendedQueue,omitempty"`
-	user.RecvedQueue = &RecvQueue{MessageMap: make(map[uint64]*SendQueue)}      //  `protobuf:"bytes,7,opt" json:"RecvedQueue,omitempty"`
-	user.AckedQueue = &AckQueue{MessageMap: make(map[uint64]*GeneralMessage)}   // `protobuf:"bytes,8,opt" json:"AckedQueue,omitempty"`
+	user.SendedMessage = make(map[uint64]uint64)
+	user.LocalMessage = make(map[uint64]*RecvQueue)
 
 	onefriend := &User{}
-	onefriend.UserId = 400
+	onefriend.UserId = Receiverid
 	onefriend.SendId = 30
-	onefriend.ReceiveId = 60
+	onefriend.ReceiveId = 100
 
-	user.UserMap[400] = onefriend
+	user.UserMap[senderid] = onefriend
 
-	var id uint64
-	var array [100]*GeneralMessage
-	for id = 0; id < 100; id++ {
-		req := &GeneralMessage{}
-		req.SendId = 101 + id
-		req.ReceiverId = 1
-		req.SenderId = 400
+	req := &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
 
-		chat := &ChatMessage{}
-		chat.ReceiverId = 1
-		chat.SenderId = 400
-		chat.SendId = 61 + id
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
 
-		req.Chatmessage = chat
-		array[id] = req
+	req.Chatmessage = chat
+
+	result := CheckStoreagedLocal_to_Local(user, req)
+
+	if result != false {
+		t.Error("StoreageLocal_to_Local   ")
 	}
 
-	for id = 0; id < 100; id++ {
-		newid := r1.Intn(99)
-		req1 := array[id]
-		array[id] = array[newid]
-		array[newid] = req1
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
+
+	req.Chatmessage = chat
+
+	result = CheckStoreagedLocal_to_Local(user, req)
+
+	if result != false {
+		t.Error("StoreageLocal_to_Local   ")
 	}
 
-	var newid uint64
-	newid = 101
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
 
-	for id = 0; id < 100; id++ {
-		result, needupdate := CoreLocal_to_Local(user, array[id])
-		if result == LOCAL_TO_LOCAL_SUCCESS {
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
 
-			//fmt.Println("now id = ", array[id].SendId)
-			if needupdate != true {
-				t.Error("Test_Local_to_local2002    error, needupdate ")
-			}
+	req.Chatmessage = chat
 
-			if array[id].SendId != newid {
-				t.Error("Test_Local_to_local2002   error, array[id].SendId != newid")
-			}
-			newid += 1
+	r := &RecvQueue{}
+	r.MessageMap = make(map[uint64]uint64)
+	r.MessageMap[101] = 101
 
+	user.LocalMessage[senderid] = r
+
+	result = CheckStoreagedLocal_to_Local(user, req)
+
+	if result != true {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 103
+
+	req.Chatmessage = chat
+
+	result = CheckStoreagedLocal_to_Local(user, req)
+
+	if result != false {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = 1234
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
+
+	req.Chatmessage = chat
+
+	defer func() {
+		if r := recover(); r != nil {
+
+		} else {
+			t.Error("StoreageLocal_to_Local   ")
 		}
+	}()
+	result = CheckStoreagedLocal_to_Local(user, req)
 
+	if result != false {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+}
+
+func Test_StoreageLocal_to_Local(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid uint64
+	senderid = 5
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+	user.LocalMessage = make(map[uint64]*RecvQueue)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+	onefriend.ReceiveId = 100
+
+	user.UserMap[senderid] = onefriend
+
+	req := &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat := &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
+
+	req.Chatmessage = chat
+
+	storage, sync := StoreageLocal_to_Local(user, req)
+
+	if storage != true && sync != false {
+		t.Error("StoreageLocal_to_Local   ")
 	}
 
-	for id = 0; id < 100; id++ {
-		result, req := SyncLocal_to_Local(user, 400)
-		if result == LOCAL_TO_LOCAL_SYNC_SUCCESS_NOSEND {
-			break
-		} else if result == LOCAL_TO_LOCAL_SYNC_SUCCESS {
-			if req.SendId != newid {
-				t.Error("Test_Local_to_local2002   error, req.SendId != newid ")
-			}
-			// fmt.Println( req.SendId, req.Chatmessage.SendId )
-			newid += 1
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
+
+	req.Chatmessage = chat
+
+	storage, sync = StoreageLocal_to_Local(user, req)
+
+	if storage != false && sync != false {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 102
+
+	req.Chatmessage = chat
+
+	storage, sync = StoreageLocal_to_Local(user, req)
+
+	if storage != true && sync != false {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = senderid
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 103
+
+	req.Chatmessage = chat
+
+	storage, sync = StoreageLocal_to_Local(user, req)
+
+	if storage != true && sync != false {
+		t.Error("StoreageLocal_to_Local   ")
+	}
+
+	req = &GeneralMessage{}
+	req.SendId = 1011
+	req.ReceiverId = Receiverid
+	req.SenderId = 1234
+
+	chat = &ChatMessage{}
+	chat.ReceiverId = Receiverid
+	chat.SendId = 101
+
+	req.Chatmessage = chat
+
+	defer func() {
+		if r := recover(); r != nil {
+
+		} else {
+			t.Error("StoreageLocal_to_Local   ")
 		}
+	}()
+	storage, sync = StoreageLocal_to_Local(user, req)
 
-	}
-	if newid != 201 {
-		t.Error("Test_Local_to_local2002   error, newid != 201 ")
-	}
-
-	if len(user.RecvedQueue.MessageMap[400].MessageMap) != 0 {
-		t.Error("Test_Local_to_local2002   error, user.RecvedQueue.MessageMap[400].MessageMap)  != 0")
+	if storage != false && sync != false {
+		t.Error("StoreageLocal_to_Local   ")
 	}
 
-	if user.UserMap[400].ReceiveId != 160 {
-		t.Error("Test_Local_to_local2002   error, user.Sendid != 1230")
+}
+
+func Test_SyncLocal_to_Local(t *testing.T) {
+
+	user := &UserInfor{}
+	user.SendId = 100
+	user.SendAckId = 100
+	var senderid, senderid2, senderid3 uint64
+	senderid = 5
+	senderid2 = 6
+	senderid3 = 7
+
+	user.UserMap = make(map[uint64]*User)
+	user.SendedMessage = make(map[uint64]uint64)
+	user.LocalMessage = make(map[uint64]*RecvQueue)
+
+	onefriend := &User{}
+	onefriend.UserId = Receiverid
+	onefriend.SendId = 30
+	onefriend.ReceiveId = 55
+
+	user.UserMap[senderid] = onefriend
+
+	onefriend2 := &User{}
+	onefriend2.UserId = Receiverid
+	onefriend2.SendId = 30
+	onefriend2.ReceiveId = 55
+
+	user.UserMap[senderid2] = onefriend2
+
+	r := &RecvQueue{}
+	r.MessageMap = make(map[uint64]uint64)
+	r.MessageMap[56] = 56
+	r.MessageMap[57] = 57
+	r.MessageMap[58] = 58
+	r.MessageMap[59] = 59
+
+	user.LocalMessage[senderid] = r
+
+	list := SyncLocal_to_Local(user, senderid)
+	fmt.Println(list)
+	if len(list) != 4 {
+		t.Error("Test_SyncLocal_to_Local   ")
 	}
+	if onefriend.ReceiveId != 59 {
+		t.Error("Test_SyncLocal_to_Local   ")
+	}
+	if len(r.MessageMap) != 0 {
+		t.Error("Test_SyncLocal_to_Local   ")
+	}
+
+	list = SyncLocal_to_Local(user, senderid2)
+	fmt.Println(list)
+	if len(list) != 0 {
+		t.Error("Test_SyncLocal_to_Local   ")
+	}
+	if onefriend.ReceiveId != 59 {
+		t.Error("Test_SyncLocal_to_Local   ")
+	}
+	if len(r.MessageMap) != 0 {
+		t.Error("Test_SyncLocal_to_Local   ")
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+
+		} else {
+			t.Error("Test_SyncLocal_to_Local   ")
+		}
+	}()
+
+	list = SyncLocal_to_Local(user, senderid3)
 }

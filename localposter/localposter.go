@@ -10,6 +10,7 @@ import (
 	. "github.com/fakewechat/lib/postrequest"
 	"github.com/fakewechat/lib/serverstatus"
 	. "github.com/fakewechat/lib/updateserverstatus"
+	. "github.com/fakewechat/lib/utils"
 	. "github.com/fakewechat/localposter/core"
 	. "github.com/fakewechat/localposter/handler"
 	. "github.com/fakewechat/message"
@@ -27,14 +28,30 @@ import (
 )
 
 var counter uint32
+var counterClient_to_local uint32
+var counterLocal_to_local uint32
+var counterLocal_ack uint32
 
 type LocalPosterAPI int
 
 var channel [LocalPostChannelSize]chan *GeneralMessage
 
 func (t *LocalPosterAPI) PosterMessage(Req *GeneralMessage, id *uint64) error {
-	s := atomic.AddUint32(&counter, 1)
-	channelId := s % LocalPostChannelSize
+	_ = atomic.AddUint32(&counter, 1)
+	channelId := 0
+	//times := LocalPostChannelSize / MinLocalPostChannelSize
+	if Req.MessageType == CHAT_CLIENT_TO_LOCALPOST {
+		_ = atomic.AddUint32(&counterClient_to_local, 1)
+		channelId = GetQueueId(Req.ReceiverId, 0, LocalPostChannelSize, MinLocalPostChannelSize)
+	} else if Req.MessageType == CHAT_LOCALPOST_TO_LOCALPOST {
+		_ = atomic.AddUint32(&counterLocal_to_local, 1)
+		channelId = GetQueueId(Req.ReceiverId, 1, LocalPostChannelSize, MinLocalPostChannelSize)
+
+	} else {
+		_ = atomic.AddUint32(&counterLocal_ack, 1)
+		channelId = GetQueueId(Req.ReceiverId, 2, LocalPostChannelSize, MinLocalPostChannelSize)
+
+	}
 	err := PushtoQueue(&channel[channelId], Req)
 	if err != nil {
 		GMonitor.Add("DropedFromQueueFull", 1)
@@ -49,6 +66,8 @@ func ProcessRequest(channel *chan *GeneralMessage, Channelindex int) {
 		L := GetSomeMessageFromQueue(channel, LocalPostThreadQueueLength)
 		for i := range L {
 			// split user
+
+			//			fmt.Println("ProcessRequest", *L[i])
 			DispatchToServer(L[i], Channelindex)
 		}
 	}
@@ -71,6 +90,7 @@ func DispatchToServer(req *GeneralMessage, Channelindex int) {
 func ProcessClient_to_Local(req *GeneralMessage, Channelindex int) {
 
 	GMonitor.Add("CLientSendRequest", 1)
+	t1 := time.Now().UnixNano()
 	Redisclient := GloabalClientPool[Channelindex].GetClient(REDISSERVER, int(*flags.RgId))
 	defer GloabalClientPool[Channelindex].ReturnClient(Redisclient)
 
@@ -83,11 +103,17 @@ func ProcessClient_to_Local(req *GeneralMessage, Channelindex int) {
 	handler = localhandler
 
 	ProcessClient_to_Local_Message(handler, req)
+	t2 := time.Now().UnixNano()
+
+	GMonitor.Add64("CLientSendRequest_time", t2-t1)
 }
 
 func ProcessLocal_to_Local(req *GeneralMessage, Channelindex int) {
 
 	GMonitor.Add("LocalPosterRecvRequest", 1)
+
+	t1 := time.Now().UnixNano()
+
 	Redisclient := GloabalClientPool[Channelindex].GetClient(REDISSERVER, int(*flags.RgId))
 	defer GloabalClientPool[Channelindex].ReturnClient(Redisclient)
 
@@ -99,11 +125,15 @@ func ProcessLocal_to_Local(req *GeneralMessage, Channelindex int) {
 	localhandler.Setup(Redisclient, Rpcclient)
 	handler = localhandler
 	ProcessLocal_to_Local_Message(handler, req)
+	t2 := time.Now().UnixNano()
+
+	GMonitor.Add64("LocalPosterRecvRequest_time", t2-t1)
 }
 
 func ProcessLocal_ack(req *GeneralMessage, Channelindex int) {
 
 	GMonitor.Add("LocalPosterRecvAck", 1)
+	t1 := time.Now().UnixNano()
 	Redisclient := GloabalClientPool[Channelindex].GetClient(REDISSERVER, int(*flags.RgId))
 	defer GloabalClientPool[Channelindex].ReturnClient(Redisclient)
 
@@ -113,6 +143,9 @@ func ProcessLocal_ack(req *GeneralMessage, Channelindex int) {
 	localhandler.Setup(Redisclient, nil)
 	handler = localhandler
 	ProcessLocal_ack_Message(handler, req)
+	t2 := time.Now().UnixNano()
+
+	GMonitor.Add64("LocalPosterRecvAck_time", t2-t1)
 }
 
 func main() {

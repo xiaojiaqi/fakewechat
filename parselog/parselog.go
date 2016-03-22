@@ -54,6 +54,9 @@ func main() {
 			break
 		}
 		l = append(l, msg)
+		for it := range msg.Status {
+			fmt.Println(msg.Info, msg.Status[it].String())
+		}
 		//fmt.Printf("read: %s\n len: %d\n", msg.String(),  needread)
 	}
 
@@ -204,6 +207,6 @@ func merge(filename string, arg ...map[string][]record) {
 	defer f.Close()
 	for i := range sorted_keys {
 		io.WriteString(f, resultmap[int64(sorted_keys[i])]+"\n")
-		fmt.Println(resultmap[int64(sorted_keys[i])])
+		//fmt.Println(resultmap[int64(sorted_keys[i])])
 	}
 }

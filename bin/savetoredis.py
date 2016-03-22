@@ -4,7 +4,7 @@ import sys
 import getopt
 import redis
 import message_pb2
-
+import time
 import random
 
 def usage():
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     userid = ""
     maps = {}
     datasize = 0
+    tnow = time.time()
     while True:
         line = sys.stdin.readline()
         num += 1
@@ -53,7 +54,9 @@ if __name__ == "__main__":
                         for i in maps:
                             a.UserMap[int(i)].UserId = int(i)
                         pipe.set("user#" + userid, a.SerializeToString())
+                        #print a.SerializeToString()
                         datasize += len(a.SerializeToString())
+                        #print datasize
                         maps={}
                         maps[ v[1] ] = "0"
 
@@ -70,3 +73,4 @@ if __name__ == "__main__":
     datasize += len(a.SerializeToString())
     pipe.execute()
     print "datasize:", datasize
+    print str(time.time() - tnow) + "second passed"
