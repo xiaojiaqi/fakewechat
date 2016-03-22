@@ -1,0 +1,81 @@
+title fakewechat工作流程
+
+
+客户端(client)->网关(Gateway): 1. 获取用户信息
+网关(Gateway)-> 缓存服务器(cacheserver): 2. 获取用户信息
+缓存服务器(cacheserver)-> 持久化数据库(redis): 3. 获取用户信息
+持久化数据库(redis)--> 缓存服务器(cacheserver): 4. 返回redis内的数据
+缓存服务器(cacheserver)--> 网关(Gateway): 5. 解析redis数据，转换成对象
+网关(Gateway)-->客户端(client): 6. 转换成json对象，返回给客户端
+客户端(client)->客户端(client): 7. 操作7
+客户端(client)->网关(Gateway): 8. 向某个好友发送消息，带上最新的id
+网关(Gateway)->本地服务器(LocalPoster): 9. 网关通过rpc 将消息投递到localposter 内部队列
+本地服务器(LocalPoster)->持久化数据库(redis): 操作10 
+本地服务器(LocalPoster)->本地服务器(LocalPoster): 操作11 
+本地服务器(LocalPoster)->持久化数据库(redis): 操作12
+本地服务器(LocalPoster)->本地网关(poster):  13. 通过rpc 消息简单的传送
+本地网关(poster)->远端网关(poster):  14. 通过rpc 消息简单的传送
+远端网关(poster)->远端服务器(LocalPoster):  15. 通过rpc消息简单的传送
+远端服务器(LocalPoster)->持久化数据库(redis): 操作16  
+远端服务器(LocalPoster)->远端服务器(LocalPoster):  操作17
+远端服务器(LocalPoster)->持久化数据库(redis): 操作18 
+远端服务器(LocalPoster)-->远端网关(poster):  操作19
+远端网关(poster)-->本地网关(poster): 20. 通过rpc 消息简单的传送
+本地网关(poster)-->本地服务器(LocalPoster): 21. 通过rpc 消息简单的传送
+本地服务器(LocalPoster)->持久化数据库(redis): 操作22
+本地服务器(LocalPoster)->本地服务器(LocalPoster): 操作23
+本地服务器(LocalPoster)->持久化数据库(redis): 操作24
+
+
+操作7:  根据结果，计算下一个消息的id, 对比本地的消息id,计算有多少新消息
+操作10: 读取消息发送者的用户信息，同时对消息发送者的用户的信息展开watch, 保证操作是原子的
+操作11: 对消息进行处理，如果是id 是新的则处理，消息发送者的发送消息id增加1 否则抛弃
+操作12: 新消息则存入持久化数据库，同时更新用户的信息，如果操作失败意味非原子，需要重会第10步重做
+操作16: 读取消息接受者用户的信息，同时对消息接受者用户的信息展开watch, 保证操作是原子的
+操作17: 对消息进行处理，如果是id 是新的则处理，同时接收者的接受消息id 增加1， 其他情况抛弃
+操作18： 新消息则存入持久化数据库，同时更新消息接受用户的信息，如果操作失败意味非原子，需要重回第15步重做
+操作19： 发回一个同样id号的ack消息,接收者是 原消息的发送者
+操作22: 读取发送用户的信息，同时对用户的信息展开watch, 保证操作是原子的
+操作23: 确认ack是新的id, 发送用户的ackid 增加1 如果已经过时就丢弃
+操作24: 更新发送用户信息，如果失败就重回22步
+
+一个用户包含以下信息
+
+1) 用户信息id
+2) 用户发送的消息id     通过这个id, 客户端可以知道自己下一个消息应该使用哪个id
+3) 用户接收的消息id     通过这个id, 客户端可以知道自己已经收到多少消息, 例子: 用户上次刷新获取到 用户接收的消息id  为100, 下次来获取 发现消息是104,则知道有4个消息到来了，只要获取这4个消息即可 
+4) 用户发送的消息ackid  用户无需知道这个id, 服务器通过这个id, 可以获知道有多少消息可能丢失，需要重传
+5) 用户已经接受的消息id 用户无需知道这个id, 
+6) 用户的消息发送队列
+7) 用户的接受消息队列
+
+
+
+
+title fakewechat 客户获取消息工作流程
+
+
+客户端(client)->网关(Gateway): 1. 获取用户信息
+网关(Gateway)-> 缓存服务器(cacheserver): 2. 获取用户信息
+缓存服务器(cacheserver)-> 持久化数据库(redis): 3. 获取用户信息
+持久化数据库(redis)--> 缓存服务器(cacheserver): 4. 返回redis内的数据
+缓存服务器(cacheserver)--> 网关(Gateway): 5. 解析redis数据，转换成对象
+网关(Gateway)-->客户端(client): 6. 转换成json对象，返回给客户端
+客户端(client)->客户端(client): 7. 查看接受消息id， 对比本地的接受消息id 计算有多少消息没有获取
+客户端(client)->网关(Gateway): 8. 发送自己本地的接受消息的id
+网关(Gateway)->缓存服务器(cacheserver): 9. 利用rpc 转发请求
+缓存服务器(cacheserver) -> 持久化数据库(redis): 10. 从持久化数据库里获取消息
+持久化数据库(redis) --> 缓存服务器(cacheserver): 11. 从redis 里获取消息, 并转为对象
+缓存服务器(cacheserver)-->网关(Gateway): 12. 通过rpc 将结果对象转发
+网关(Gateway)-->客户端(client): 13. 将结果对象转为json对象
+客户端(client)->客户端(client): 14. 解析json对象，更新本地接受消息id
+
+
+操作7:  查看接受消息id， 对比本地的接受消息id 计算有多少消息没有获取，
+操作8:  发送自己本地的接受消息的id, 
+操作9:  利用rpc 转发请求
+操作10:  从持久化数据库里获取消息
+操作11:  从redis 里获取消息, 并转为对象
+操作12:  通过rpc 将对象转发
+操作13:   将对象  转为json对象
+操作14:  解析json对象，更新本地接受消息id
