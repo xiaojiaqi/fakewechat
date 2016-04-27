@@ -23,11 +23,16 @@ cd protobuf-master
 ./configure 
 make
 
+
+
 cd python
 
 sudo python setup.py install
 
 cd ~/gopath/src/github.com/fakewechat/bin
+
+
+sudo easy_install redis
 
 
 
