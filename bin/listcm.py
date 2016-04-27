@@ -3,20 +3,25 @@
 
 host=[]
 
+rpinsamerange = 20
+rpinotherrange = 10
+
 local = False
 lip="127.0.0.1"
-rgsize = 1
+
+
+rgsize = 50
 rgrange = 1000
 localpostersize = 1
 
-routeHost="10.29.101.3"
+routeHost="10.0.2.11"
 routePort="8089"
 
-monitorHost="10.29.101.3"
+monitorHost="10.0.2.11"
 monitorPort="8000"
 
 rg = {}
-rg[1] = ["10.29.101.3","10.29.101.7"]
+rg[1] = ["10.29.101.3"]
 rg[2] = ["10.29.101.7"]
 rg[3] = ["192.168.4.45"]
 rg[4] = ["192.168.4.46"]
@@ -36,6 +41,10 @@ if local == True:
     routeHost = lip
     monitorHost = lip
 
+rg = {}
+for i in range(1, rgsize + 1):
+    rg[i] = ["10.0.2." + str(i)]
+
 routeurl = " -routeserverurl=\"http://" + routeHost + ":" + routePort +"/server/\"  "
 routrreg = " -routeregisturl=\"http://" + routeHost + ":" + routePort+ "/regist/\" "
 rgurl= " -rgsize=" +  str(rgrange) + " "
@@ -46,8 +55,24 @@ parameter = routeurl + routrreg  +  rgurl +  moniturl
 
 print "\n\n\n"
 
+
+global cmds
+
+cmds = ""
+
 def Pcmd(i):
     print i
+    global cmds
+    cmds += i + "\n"
+
+#refactor
+def SaveCmds(path):
+    global cmds
+    filew = open(path, 'w')
+    filew.write(cmds)
+    filew.close( )
+    cmds = ""
+
 
 v ="""
 
@@ -61,33 +86,44 @@ print v
 
 
 for i in range(1, rgsize+1):
-    Pcmd ("redis-cli -p  " +  str(1500+i) + " flushall")
+    for ipadd in rg[i]:
+        Pcmd ("redis-cli -h " + str(ipadd)  + " -p  " +  str(1500) + " flushall")
+SaveCmds("cmd/clean_redis.sh")
 
+print "\n\n\n"
+
+
+
+
+def makeClientName(ipadd):
+    return "cmd/client/client" + str(ipadd) +".sh"
+
+def makeServerName(ipadd):
+    return "cmd/server/server" + str(ipadd) +".sh"
+
+
+for i in range(1, rgsize+1):
+    for ipadd in rg[i]:
+        Pcmd( "./client -host " + str(ipadd)+  " -port "+ str( 9500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i))
+        SaveCmds(makeClientName(ipadd))
 print "\n\n\n"
 
 
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
-        print "./client -host " + str(ipadd)+  " -port ", 9500+i,  " -minid ", 1 + (i-1)*rgrange,  " -maxid ", rgrange * i
+        Pcmd ("./checkdb.py -m " + str(ipadd) + " -p " +str( 1500) +  " -l " + str( 1 + (i-1)*rgrange) +  " -g " + str( rgrange * i))
+SaveCmds("cmd/checkdb.sh")
+print "\n\n\n"
 
+for i in range(1, rgsize+1):
+    Pcmd ("./savetoredis.py -m " + rg[i][0] + " -p " + str(1500) + " < " +  str(i) + ".txt")
+SaveCmds("cmd/savetoredis.sh")
 print "\n\n\n"
 
 
 for i in range(1, rgsize+1):
-    for ipadd in rg[i]:
-        print "./checkdb.py -m " + str(ipadd) + " -p ", 1500+i,  " -l ", 1 + (i-1)*rgrange,  " -g ", rgrange * i
-
-print "\n\n\n"
-
-for i in range(1, rgsize+1):
-    Pcmd ("./savetoredis.py -m " + rg[i][0] + " -p " + str(1500+i) + " < " +  str(i) + ".txt")
-
-print "\n\n\n"
-
-
-for i in range(1, rgsize+1):
-    Pcmd("curl -kvv \"http://" + routeHost + ":" + routePort + "/regist/redis/"+ str(i) + "/?id=res" + str(i) +"&host=" + str(rg[i][0]) +"&port="+str(1500+i)+"&cellid=1\"")
-
+    Pcmd("curl -kvv \"http://" + routeHost + ":" + routePort + "/regist/redis/"+ str(i) + "/?id=res" + str(i) +"&host=" + str(rg[i][0]) +"&port="+str(1500)+"&cellid=1\"")
+SaveCmds("cmd/resign.sh")
 
 
 def show(head, tail, log):
@@ -153,25 +189,25 @@ def show2(head, tail, log):
     #Cache
 
     for i in range(1, rgsize +1):
-        for ipadd in rg[i]: 
+        for ipadd in rg[i]:
             logstr = " "
             if log == True:
                 logstr = " > ./ca" + str(index) + ".log  2 >&1 "
 
-            Pcmd( head + "  ./cacheserver -hostid=ca" + str(index) + " -servertype=cache -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9600+i) + " -rgid=" + str(i) + " -process=ca "+ parameter  + logstr  + tail)
+            Pcmd( head + "  ./cacheserver -hostid=ca" + str(index) + " -servertype=cache -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9600) + " -rgid=" + str(i) + " -process=ca "+ parameter  + logstr  + tail)
             index += 1
 
             logstr = " "
             if log == True:
                 logstr = " > ./gw" + str(index) + ".log  2 >&1 "
-            Pcmd( head + "  ./gateway -hostid=gw" + str(index) + " -servertype=gw -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9500+i) + " -rgid=" + str(i) + " -process=gw " + parameter + logstr   + tail)
+            Pcmd( head + "  ./gateway -hostid=gw" + str(index) + " -servertype=gw -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9500) + " -rgid=" + str(i) + " -process=gw " + parameter + logstr   + tail)
             index += 1
 
             #poster
             logstr = " "
             if log == True:
                 logstr = " > ./poster" + str(index) + ".log  2 >&1 "
-            Pcmd( head + "  ./poster -hostid=poster" + str(index) + " -servertype=poster -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9800+i) + " -rgid=" + str(i) + " -process=poster " + parameter  + logstr  + tail)
+            Pcmd( head + "  ./poster -hostid=poster" + str(index) + " -servertype=poster -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9800) + " -rgid=" + str(i) + " -process=poster " + parameter  + logstr  + tail)
 
             index += 1
             #localposter
@@ -184,6 +220,70 @@ def show2(head, tail, log):
                 Pcmd( head + "  ./localposter -hostid=local" + str(index) + " -servertype=localposter -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9700+index ) + " -rgid=" + str(i) + " -process=local " + parameter  + logstr   + tail)
                 index += 1
             print "\n\n\n"
+            SaveCmds(makeServerName(ipadd))
+
+def showansible():
+    cmd = """ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/bin dest=/home/ec2-user"
+ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/sysctl.conf dest=/home/ec2-user/bin"
+ansible all -a "sudo cp /home/ec2-user/bin/sysctl.conf /etc"
+ansible all -a "sudo sysctl -p"
+ansible all -m file -a "dest=/home/ec2-user/bin mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/gateway mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/redis-server mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/router mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/poster mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/localposter mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/cacheserver mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/monitorserver mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/client mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/redis-client mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/kill.sh mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/start_redis.sh mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/stop_redis.sh mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
+
+
+
+
+    """
+
+    Pcmd(cmd)
+    for i in range(1, rgsize +1):
+        for ipadd in rg[i]:
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeClientName(ipadd) + "\" dest=/home/ec2-user/bin/client.sh\""
+            Pcmd(cmd)
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeServerName(ipadd) + "\" dest=/home/ec2-user/bin/server.sh\""
+            Pcmd(cmd)
+
+            cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/client.sh mode=700\""
+            Pcmd(cmd)
+
+            cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/server.sh mode=700\""
+            Pcmd(cmd)
+    SaveCmds("cmd/ansiable.sh")
+
+
+
+def listHost():
+    for i in range(1, rgsize +1):
+        for ipadd in rg[i]:
+            Pcmd(str(ipadd))
+    SaveCmds("cmd/hosts")
+
+def genCmd():
+    cmd = "cd ../python"
+    Pcmd(cmd)
+    cmd = "python gen.py -a " + "1," + str(rgsize * rgrange ) + "  -c " + str(rpinsamerange) +  "   -m " +  str(rpinotherrange) + "   -r " + str( rgrange )
+    Pcmd(cmd)
+    cmd = "cat ./rp.txt | ./split.py -k" + str(rgrange )
+    Pcmd(cmd)
+    for i in range (1, rgsize +1 ):
+        cmd = "mv " + str(i)+".txt" + " ../bin"
+        Pcmd(cmd)
+    cmd = "cd ../bin"
+    Pcmd(cmd)
+
+    SaveCmds("cmd/gen.sh")
 
 
 """
@@ -200,5 +300,7 @@ show2 ("screen", "", False)
 #show ("nohup", " >/dev/null &", False)
 show2 ("nohup", " >/dev/null &", False)
 #show2 ("nohup", "   &", True)
-
+showansible()
+listHost()
+genCmd()
 
