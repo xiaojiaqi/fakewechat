@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 scount = int(count * 0.5 *(i.max+1-i.min))
                 cmd += " -c " + str(scount)
             else:
-                scount =  int (0.5* mixcount *(i.max+1-i.min)  /len(v)))
+                scount =  int (0.5* mixcount *(i.max+1-i.min)  /len(v))
                 cmd += " -c " + str( scount )
             cmd += " >> " + tmpfile
             print cmd

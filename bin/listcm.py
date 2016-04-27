@@ -10,14 +10,14 @@ local = False
 lip="127.0.0.1"
 
 
-rgsize = 50
+rgsize = 4
 rgrange = 1000
 localpostersize = 1
 
-routeHost="10.0.2.11"
+routeHost="10.0.2.20"
 routePort="8089"
 
-monitorHost="10.0.2.11"
+monitorHost="10.0.2.20"
 monitorPort="8000"
 
 rg = {}
@@ -43,7 +43,7 @@ if local == True:
 
 rg = {}
 for i in range(1, rgsize + 1):
-    rg[i] = ["10.0.2." + str(i)]
+    rg[i] = ["10.0.2." + str(i+20 - 1)]
 
 routeurl = " -routeserverurl=\"http://" + routeHost + ":" + routePort +"/server/\"  "
 routrreg = " -routeregisturl=\"http://" + routeHost + ":" + routePort+ "/regist/\" "
@@ -104,6 +104,7 @@ def makeServerName(ipadd):
 
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
+        Pcmd ("cd /home/ec2-user/bin")
         Pcmd( "./client -host " + str(ipadd)+  " -port "+ str( 9500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i))
         SaveCmds(makeClientName(ipadd))
 print "\n\n\n"
@@ -183,13 +184,16 @@ def show2(head, tail, log):
     print "\n\n\n"
     index = 1
 
+    Pcmd ("cd /home/ec2-user/bin")
     Pcmd (head +   " ./router " + tail)
     Pcmd (head +   " ./monitorserver " + tail)
 
+    SaveCmds("cmd/monitor.sh")
     #Cache
 
     for i in range(1, rgsize +1):
         for ipadd in rg[i]:
+            Pcmd ("cd /home/ec2-user/bin")
             logstr = " "
             if log == True:
                 logstr = " > ./ca" + str(index) + ".log  2 >&1 "
@@ -225,6 +229,8 @@ def show2(head, tail, log):
 def showansible():
     cmd = """ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/bin dest=/home/ec2-user"
 ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/sysctl.conf dest=/home/ec2-user/bin"
+ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/psmisc*.rpm dest=/home/ec2-user/bin"
+
 ansible all -a "sudo cp /home/ec2-user/bin/sysctl.conf /etc"
 ansible all -a "sudo sysctl -p"
 ansible all -m file -a "dest=/home/ec2-user/bin mode=700"
@@ -236,7 +242,7 @@ ansible all -m file -a "dest=/home/ec2-user/bin/localposter mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/cacheserver mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/monitorserver mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/client mode=700"
-ansible all -m file -a "dest=/home/ec2-user/bin/redis-client mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/redis-cli mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/kill.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/start_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/stop_redis.sh mode=700"
@@ -250,17 +256,17 @@ ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
     Pcmd(cmd)
     for i in range(1, rgsize +1):
         for ipadd in rg[i]:
-            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeClientName(ipadd) + "\" dest=/home/ec2-user/bin/client.sh\""
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeClientName(ipadd) + " dest=/home/ec2-user/bin/client.sh\""
             Pcmd(cmd)
-            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeServerName(ipadd) + "\" dest=/home/ec2-user/bin/server.sh\""
-            Pcmd(cmd)
-
-            cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/client.sh mode=700\""
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeServerName(ipadd) + " dest=/home/ec2-user/bin/server.sh\""
             Pcmd(cmd)
 
-            cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/server.sh mode=700\""
-            Pcmd(cmd)
-    SaveCmds("cmd/ansiable.sh")
+    cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/client.sh mode=700\""
+    Pcmd(cmd)
+
+    cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/server.sh mode=700\""
+    Pcmd(cmd)
+    SaveCmds("cmd/ansible.sh")
 
 
 
@@ -283,6 +289,7 @@ def genCmd():
     cmd = "cd ../bin"
     Pcmd(cmd)
 
+
     SaveCmds("cmd/gen.sh")
 
 
@@ -298,6 +305,9 @@ show2 ("screen", "", False)
 """
 
 #show ("nohup", " >/dev/null &", False)
+
+
+
 show2 ("nohup", " >/dev/null &", False)
 #show2 ("nohup", "   &", True)
 showansible()

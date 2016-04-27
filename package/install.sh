@@ -9,7 +9,9 @@ cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
 sudo easy_install redis
 
+yumdownloader  psmisc
 
+cp psmisc*.rpm /home/ec2-user/gopath/src/github.com/fakewechat/bin/
 
 #golang install
 curl -O -L https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz -kvv
@@ -44,7 +46,9 @@ tar zxvf redis-2.8.24.tar.gz
 cd redis-2.8.24
 make
 sudo make install
+
 cp src/redis-server /home/ec2-user/gopath/src/github.com/fakewechat/bin
+cp src/redis-cli /home/ec2-user/gopath/src/github.com/fakewechat/bin
 
 
 
