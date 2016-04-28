@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/fakewechat/message"
+	"github.com/golang/protobuf/proto"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -20,6 +23,8 @@ type JsonUserInfo struct {
 	ClientReceiveId int      `json:"ClientReceiveId"` // how many message from server by client
 	Friends         []string `json:"friends"`         // friend list
 }
+
+var socket *net.UDPConn
 
 func getHttp(url string) string {
 	transport := http.Transport{
@@ -181,6 +186,7 @@ var host *string
 var port *string
 var minid *int
 var maxid *int
+var monitor *string
 
 const (
 	Concurrency = 300
@@ -240,6 +246,8 @@ func CheckUserData(channel *chan urlRequest) {
 				lock.Lock()
 				finished += 1
 				fmt.Println(finished, "user finished", a.userid)
+
+				SendStatus(finished)
 				lock.Unlock()
 				break
 			} else {
@@ -258,12 +266,49 @@ func CheckUserData(channel *chan urlRequest) {
 	}
 }
 
+func SendStatus(finished int) {
+	monitor := &message.ClientMonitorStatus{}
+	monitor.Host = *host + *port
+	monitor.Finished = int32(finished)
+
+	buffer, err := proto.Marshal(monitor) //SerializeToOstream
+	// 发送数据
+	//fmt.Println(msg.String(), len(buffer), " ", buffer)
+	_, err = socket.Write(buffer)
+	if err != nil {
+		fmt.Println("发送数据失败!", err)
+		//return
+	}
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	host = flag.String("host", "127.0.0.1", "host")
 	port = flag.String("port", "9501", "port")
 	minid = flag.Int("minid", 1, "minid")
 	maxid = flag.Int("maxid", 2500, "maxid")
+	monitor = flag.String("monitor", "127.0.0.1:8002", "monitor")
+
+	for {
+		var err error
+		addr, err := net.ResolveUDPAddr("udp4", *monitor)
+		if err != nil {
+			fmt.Println(err)
+			time.Sleep(time.Duration(1) * time.Second)
+			continue
+		}
+
+		socket, err = net.DialUDP("udp", nil, addr)
+
+		if err != nil {
+			fmt.Println("连接失败!", err)
+			time.Sleep(time.Duration(1) * time.Second)
+			continue
+		}
+
+		// connection success
+		break
+	}
 
 	flag.Parse()
 	t := time.Now().Unix()

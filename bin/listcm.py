@@ -247,7 +247,7 @@ ansible all -m file -a "dest=/home/ec2-user/bin/kill.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/start_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/stop_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
-
+ansible all -m file -a "dest=/home/ec2-user/bin/monitorclient mode=700"
 
 
 

@@ -173,3 +173,9 @@ message MonitorStatus
     repeated MonitorServerStatus Status = 2;
 }
 
+message ClientMonitorStatus
+{
+    string host = 1;
+    int32  finished = 2;
+    int32  sum = 3;
+}
