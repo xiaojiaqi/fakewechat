@@ -1,3 +1,6 @@
+#!/bin/bash
+set -o -e
+
 yum install -y gcc gcc-c++ autoconf automake libtool vim  wget
 
 cd /home/ec2-user/gopath/src/github.com/fakewechat/package
