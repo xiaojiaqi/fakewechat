@@ -1,18 +1,18 @@
 yum install -y gcc gcc-c++ autoconf automake libtool vim  wget
 
-cd ~/gopath/src/github.com/fakewechat/package
+cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 
 #golang install
 curl -O -L https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz -kvv
 tar zxvf go1.6.2.linux-amd64.tar.gz
-mv go ~/
+mv go /home/ec2-user/
 
 #setup env
-echo -e "export GOROOT=~/go\n export PATH=$PATH:~/go/bin\n export GOPATH=~/gopath" >> ~/.bashrc
-. ~/.bashrc
+echo -e "export GOROOT=/home/ec2-user/go\n export PATH=$PATH:/home/ec2-user/go/bin\n export GOPATH=/home/ec2-user/gopath" >> /home/ec2-user/.bashrc
+. /home/ec2-user/.bashrc
 
 #install protbuf
-cd ~/gopath/src/github.com/fakewechat/package
+cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 tar zxvf protobuf-master.tar.gz
 cd protobuf-master
 ./autogen.sh
@@ -24,7 +24,7 @@ sudo python setup.py install
 
 
 # build package
-cd ~/gopath/src/github.com/fakewechat/bin
+cd /home/ec2-user/gopath/src/github.com/fakewechat/bin
 ./build.sh
 
 #install redis for python
@@ -32,12 +32,12 @@ wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
 sudo easy_install redis
 
 # redis
-cd ~/gopath/src/github.com/fakewechat/package
+cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 tar zxvf redis-2.8.24.tar.gz
 cd redis-2.8.24
 make
 sudo make install
-cp src/redis-server ~/gopath/src/github.com/fakewechat/bin
+cp src/redis-server /home/ec2-user/gopath/src/github.com/fakewechat/bin
 
 
 
