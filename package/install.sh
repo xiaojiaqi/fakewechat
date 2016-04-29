@@ -5,6 +5,12 @@ yum install -y gcc gcc-c++ autoconf automake libtool vim  wget psmisc
 
 cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 
+#install redis for python
+wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
+sudo easy_install redis
+
+
+
 #golang install
 curl -O -L https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz -kvv
 tar zxvf go1.6.2.linux-amd64.tar.gz
@@ -30,9 +36,7 @@ sudo python setup.py install
 cd /home/ec2-user/gopath/src/github.com/fakewechat/bin
 ./build.sh
 
-#install redis for python
-wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
-sudo easy_install redis
+
 
 # redis
 cd /home/ec2-user/gopath/src/github.com/fakewechat/package
