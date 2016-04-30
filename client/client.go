@@ -270,7 +270,8 @@ func CheckUserData(channel *chan urlRequest) {
 
 func SendStatus(finished int) {
 	monitor := &message.ClientMonitorStatus{}
-	monitor.Host = *host + *port
+	monitor.Host = *host +"_" + *port
+
 	monitor.Finished = int32(finished)
 
 	buffer, err := proto.Marshal(monitor) //SerializeToOstream
