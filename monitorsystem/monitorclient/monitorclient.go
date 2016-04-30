@@ -122,7 +122,7 @@ func DrawScreen( dict map[string] int, keys[]string, starttime int64) {
 	index := 0
 	for k  := range keys {
 		
-		x := 20*(index % 4)
+		x := 30*(index % 4)
 		y := 2 + index / 4
 		WriteString(Yellow, x, y, keys[k] + ":" + strconv.Itoa(  dict[ keys[k]  ]  )   )
         index += 1
