@@ -105,7 +105,7 @@ def makeServerName(ipadd):
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
         Pcmd ("cd /home/ec2-user/bin")
-        Pcmd( "./client -host " + str(ipadd)+  " -port "+ str( 9500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i))
+        Pcmd( "./client -host " + str(ipadd)+  " -port "+ str( 9500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i)  + " -monitor "+ monitorHost + ":8002"   )
         SaveCmds(makeClientName(ipadd))
 print "\n\n\n"
 
@@ -247,7 +247,7 @@ ansible all -m file -a "dest=/home/ec2-user/bin/kill.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/start_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/stop_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
-ansible all -m file -a "dest=/home/ec2-user/bin/monitorclient mode=700"
+
 
 
 

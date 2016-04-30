@@ -155,6 +155,8 @@ func SendRequest(id int, list []urlmessage, messageid int, host string, port str
 					sendsucc = true
 					lock.Lock()
 					send += 1
+
+				        SendStatus(send)
 					lock.Unlock()
 					fmt.Println(send, "user  send")
 					break
@@ -247,7 +249,7 @@ func CheckUserData(channel *chan urlRequest) {
 				finished += 1
 				fmt.Println(finished, "user finished", a.userid)
 
-				SendStatus(finished)
+
 				lock.Unlock()
 				break
 			} else {
@@ -289,6 +291,8 @@ func main() {
 	maxid = flag.Int("maxid", 2500, "maxid")
 	monitor = flag.String("monitor", "127.0.0.1:8002", "monitor")
 
+	flag.Parse()
+
 	for {
 		var err error
 		addr, err := net.ResolveUDPAddr("udp4", *monitor)
@@ -310,7 +314,7 @@ func main() {
 		break
 	}
 
-	flag.Parse()
+
 	t := time.Now().Unix()
 	var channel chan urlRequest
 	var checkchannel chan urlRequest
