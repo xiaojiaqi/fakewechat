@@ -112,13 +112,13 @@ print "\n\n\n"
 
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
-        Pcmd ("./checkdb.py -m " + str(ipadd) + " -p " +str( 1500) +  " -l " + str( 1 + (i-1)*rgrange) +  " -g " + str( rgrange * i))
+        Pcmd ("./checkdb.py -m " + str(ipadd) + " -p " +str(1500) +  " -l " + str( 1 + (i-1)*rgrange) +  " -g " + str( rgrange * i))
 SaveCmds("cmd/checkdb.sh")
 print "\n\n\n"
 
 for i in range(1, rgsize+1):
     Pcmd ("./savetoredis.py -m " + rg[i][0] + " -p " + str(1500) + " < " +  str(i) + ".txt")
-SaveCmds("cmd/savetoredis.sh")
+SaveCmds("cmd/savetoredis_all.sh")
 print "\n\n\n"
 
 
@@ -229,10 +229,10 @@ def show2(head, tail, log):
 def showansible():
     cmd = """ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/bin dest=/home/ec2-user"
 ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/sysctl.conf dest=/home/ec2-user/bin"
-ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/psmisc*.rpm dest=/home/ec2-user/bin"
-
 ansible all -a "sudo cp /home/ec2-user/bin/sysctl.conf /etc"
 ansible all -a "sudo sysctl -p"
+ansible all -a "sudo rpm -ivh  /home/ec2-user/bin/*.rpm"
+
 ansible all -m file -a "dest=/home/ec2-user/bin mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/gateway mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/redis-server mode=700"
@@ -243,12 +243,13 @@ ansible all -m file -a "dest=/home/ec2-user/bin/cacheserver mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/monitorclient mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/monitorserver mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/client mode=700"
+ansible all -m file -a "dest=/home/ec2-user/bin/goredis mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/redis-cli mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/kill.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/start_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/stop_redis.sh mode=700"
 ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
-
+ansible all -m file -a "dest=/home/ec2-user/bin/savetoredis.sh mode=700"
 
 
 
@@ -261,6 +262,9 @@ ansible all -m file -a "dest=/home/ec2-user/bin/redis.conf mode=700"
             Pcmd(cmd)
             cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeServerName(ipadd) + " dest=/home/ec2-user/bin/server.sh\""
             Pcmd(cmd)
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/python/" + str(i) + ".txt" + " dest=/home/ec2-user/bin/db.txt\""
+            Pcmd(cmd)
+
 
     cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/client.sh mode=700\""
     Pcmd(cmd)
@@ -284,9 +288,6 @@ def genCmd():
     Pcmd(cmd)
     cmd = "cat ./rp.txt | ./split.py -k " + str(rgrange )
     Pcmd(cmd)
-    for i in range (1, rgsize +1 ):
-        cmd = "mv " + str(i)+".txt" + " ../bin"
-        Pcmd(cmd)
     cmd = "cd ../bin"
     Pcmd(cmd)
 
