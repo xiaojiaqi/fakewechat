@@ -47,7 +47,7 @@ if __name__ == "__main__":
         #print data
         a.ParseFromString((data))
         #print a
-        print "user", i, a.SendId, a.SendAckId, a.ReceiveId, len(a.UserMap)*5
+        #print "user", i, a.SendId, a.SendAckId, a.ReceiveId, len(a.UserMap)*5
         if (a.SendId != a.SendAckId) or (a.ReceiveId != a.SendId):
             print "wrong", "user", i, a.SendId, a.SendAckId, a.ReceiveId, len(a.UserMap)*5
             print a
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         else:
             user = "C#inbox" + str(i)
             list = r.lrange(user,start=0,end=-1)
-            print "inbox " , user, " ", len(list) ," want ", len(a.UserMap)*5
+            #print "inbox " , user, " ", len(list) ," want ", len(a.UserMap)*5
             if len(list) != len(a.UserMap)*5:
                 break
             for item in list:
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             #print "outbox"
             user = "C#outbox" + str(i)
             list = r.lrange(user,start=0,end=-1)
-            print "outbox " , user, " ", len(list) ," want ", len(a.UserMap)*5
+            #print "outbox " , user, " ", len(list) ," want ", len(a.UserMap)*5
             if len(list) != len(a.UserMap)*5:
                 print len(list) != len(a.UserMap)*5
                 os.exit(1)

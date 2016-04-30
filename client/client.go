@@ -158,7 +158,7 @@ func SendRequest(id int, list []urlmessage, messageid int, host string, port str
 
 				        SendStatus(send)
 					lock.Unlock()
-					fmt.Println(send, "user  send")
+				//	fmt.Println(send, "user  send")
 					break
 				}
 			}
@@ -201,7 +201,7 @@ func makeRequest(ch *chan urlRequest) {
 	lock.Unlock()
 
 	for i := *minid; i <= *maxid; i++ {
-		fmt.Println(i)
+		//fmt.Println(i)
 		a := urlRequest{}
 		a.host = *host
 		a.port = *port
@@ -222,7 +222,7 @@ func Process(channel *chan urlRequest) {
 		//   I know, it is a bug maybe dead lock
 		//
 		a := <-*channel
-		fmt.Println("get ", a.userid)
+		//fmt.Println("get ", a.userid)
 		maxsendid, list := getRequestUrl(a.userid, a.host, a.port)
 		SendRequest(a.userid, list, maxsendid, a.host, a.port)
 		lock.Lock()
@@ -238,13 +238,13 @@ func CheckUserData(channel *chan urlRequest) {
 		for {
 			o := getUserInfo(a.userid, a.host, a.port)
 			if o == nil {
-				fmt.Println("o == nil")
+			//	fmt.Println("o == nil")
 				time.Sleep(10 * time.Second)
 				continue
 			}
 
 			if (o.SendId == o.ReceiveId) && (o.SendId == o.SendAckId) {
-				fmt.Println(a.userid, o.SendId, o.SendAckId, o.ReceiveId)
+				//fmt.Println(a.userid, o.SendId, o.SendAckId, o.ReceiveId)
 				lock.Lock()
 				finished += 1
 				fmt.Println(finished, "user finished", a.userid)
@@ -253,7 +253,7 @@ func CheckUserData(channel *chan urlRequest) {
 				lock.Unlock()
 				break
 			} else {
-				fmt.Println("check user failed", a.userid, o.SendId, o.SendAckId, o.ReceiveId)
+				//fmt.Println("check user failed", a.userid, o.SendId, o.SendAckId, o.ReceiveId)
 				time.Sleep(10 * time.Second)
 				//panic("error")
 			}

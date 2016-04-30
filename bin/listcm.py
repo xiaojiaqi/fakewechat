@@ -282,7 +282,7 @@ def genCmd():
     Pcmd(cmd)
     cmd = "python gen.py -a " + "1," + str(rgsize * rgrange ) + "  -c " + str(rpinsamerange) +  "   -m " +  str(rpinotherrange) + "   -r " + str( rgrange )
     Pcmd(cmd)
-    cmd = "cat ./rp.txt | ./split.py -k" + str(rgrange )
+    cmd = "cat ./rp.txt | ./split.py -k " + str(rgrange )
     Pcmd(cmd)
     for i in range (1, rgsize +1 ):
         cmd = "mv " + str(i)+".txt" + " ../bin"
