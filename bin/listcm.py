@@ -11,7 +11,7 @@ lip="127.0.0.1"
 
 
 rgsize = 4
-rgrange = 1000
+rgrange = 3000
 localpostersize = 1
 
 routeHost="10.0.2.20"

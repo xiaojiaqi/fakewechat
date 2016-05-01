@@ -15,10 +15,9 @@ sudo chmod 777 /etc/ansible/hosts
 
 cat cmd/hosts >> /etc/ansible/hosts
 
-./ansible.sh
-
 ./gen.sh
 
+./ansible.sh
 #ansible all -a   "sh /home/ec2-user/bin/kill.sh"
 
 ansible all -a  "sh /home/ec2-user/bin/stop_redis.sh"

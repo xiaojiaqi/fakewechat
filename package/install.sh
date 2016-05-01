@@ -1,7 +1,7 @@
 #!/bin/bash
 set -o -e
 
-yum install -y gcc gcc-c++ autoconf automake libtool vim  wget psmisc
+sudo yum install -y gcc gcc-c++ autoconf automake libtool vim  wget psmisc
 
 cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 
@@ -9,7 +9,7 @@ cd /home/ec2-user/gopath/src/github.com/fakewechat/package
 wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
 sudo easy_install redis
 
-yumdownloader  psmisc
+sudo yumdownloader  psmisc
 
 cp psmisc*.rpm /home/ec2-user/gopath/src/github.com/fakewechat/bin/
 
@@ -52,10 +52,10 @@ cp src/redis-cli /home/ec2-user/gopath/src/github.com/fakewechat/bin
 
 
 
-rpm -Uvh http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-6.noarch.rpm
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+sudo rpm -Uvh http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-6.noarch.rpm
+sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
 
-yum install -y ansible 
+sudo yum install -y ansible 
 
 
 

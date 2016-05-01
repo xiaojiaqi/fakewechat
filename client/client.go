@@ -191,7 +191,7 @@ var maxid *int
 var monitor *string
 
 const (
-	Concurrency = 300
+	Concurrency = 200
 )
 
 func makeRequest(ch *chan urlRequest) {
