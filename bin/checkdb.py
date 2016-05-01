@@ -40,6 +40,7 @@ if __name__ == "__main__":
     userid = ""
     datasize = 0
     tnow = time.time()
+    messagesize = 0
     for i in range(min, max+1):
         username = "user#" + str(i)
         data = r.get(username)
@@ -72,7 +73,7 @@ if __name__ == "__main__":
             if len(list) != len(a.UserMap)*5:
                 print len(list) != len(a.UserMap)*5
                 os.exit(1)
-
+            messagesize += len(list)
             for item in list:
                 mess = message_pb2.GeneralMessage()
                 mess.ParseFromString( item )
@@ -80,4 +81,4 @@ if __name__ == "__main__":
                     print "wrong", i, mess.SenderId
                     os.exit(1)
                 #print mess.messageType, mess.SenderId,  mess.ReceiverId, mess.SendId
-    print "spend ", time.time() - tnow
+    print "spend ", time.time() - tnow, messagesize

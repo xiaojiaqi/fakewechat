@@ -101,6 +101,8 @@ def makeClientName(ipadd):
 def makeServerName(ipadd):
     return "cmd/server/server" + str(ipadd) +".sh"
 
+def makeCheckName(ipadd):
+    return "cmd/server/checkdb" + str(ipadd) +".sh"
 
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
@@ -109,12 +111,21 @@ for i in range(1, rgsize+1):
         SaveCmds(makeClientName(ipadd))
 print "\n\n\n"
 
+for i in range(1, rgsize+1):
+    for ipadd in rg[i]:
+        Pcmd ("cd /home/ec2-user/bin")
+        Pcmd( "./goredis -host " + str(ipadd)+  " -port "+ str( 1500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i)  + " -method " +  " check"   )
+        SaveCmds(makeCheckName(ipadd))
+print "\n\n\n"
+
+
 
 for i in range(1, rgsize+1):
     for ipadd in rg[i]:
         Pcmd ("./checkdb.py -m " + str(ipadd) + " -p " +str(1500) +  " -l " + str( 1 + (i-1)*rgrange) +  " -g " + str( rgrange * i))
 SaveCmds("cmd/checkdb.sh")
 print "\n\n\n"
+
 
 for i in range(1, rgsize+1):
     Pcmd ("./savetoredis.py -m " + rg[i][0] + " -p " + str(1500) + " < " +  str(i) + ".txt")
@@ -226,6 +237,9 @@ def show2(head, tail, log):
             print "\n\n\n"
             SaveCmds(makeServerName(ipadd))
 
+
+
+
 def showansible():
     cmd = """ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/bin dest=/home/ec2-user"
 ansible all -m copy -a "src=/home/ec2-user/gopath/src/github.com/fakewechat/package/sysctl.conf dest=/home/ec2-user/bin"
@@ -262,13 +276,18 @@ ansible all -m file -a "dest=/home/ec2-user/bin/savetoredis.sh mode=700"
             Pcmd(cmd)
             cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeServerName(ipadd) + " dest=/home/ec2-user/bin/server.sh\""
             Pcmd(cmd)
+            cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/bin/" + makeCheckName(ipadd)  + " dest=/home/ec2-user/bin/checkdb.sh\""
+            Pcmd(cmd)
+
+
             cmd = "ansible " + str(ipadd) + " -m copy -a \"src=/home/ec2-user/gopath/src/github.com/fakewechat/python/" + str(i) + ".txt" + " dest=/home/ec2-user/bin/db.txt\""
             Pcmd(cmd)
 
 
     cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/client.sh mode=700\""
     Pcmd(cmd)
-
+    cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/checkdb.sh mode=700\""
+    Pcmd(cmd)
     cmd = "ansible all -m file -a \"dest=/home/ec2-user/bin/server.sh mode=700\""
     Pcmd(cmd)
     SaveCmds("cmd/ansible.sh")

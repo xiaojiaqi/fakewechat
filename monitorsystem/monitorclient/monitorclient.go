@@ -117,7 +117,8 @@ func DrawScreen( dict map[string] int, keys[]string, starttime int64) {
 		sum += v
 	}
 	spendtime := time.Now().Unix() - starttime
-	WriteString (Red, 30, 0, "sum: " +  strconv.Itoa(sum) + " sepend " +  strconv.Itoa(int(spendtime)) + " seconds"  )
+	WriteString (Red, 30, 0, "sum: " +  strconv.Itoa(sum) + " spend " +  strconv.Itoa(int(spendtime)) + " seconds"  )
+
 	
 	index := 0
 	for k  := range keys {
