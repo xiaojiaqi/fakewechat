@@ -286,8 +286,8 @@ def GenAnsible():
     cmd = "ansible all  -m raw -a \"systemctl stop firewalld.service\""
     Pcmd(cmd)
 
-    cmd = "ansible all -a \"sudo rpm -ivh  " + HOME + "/bin/*.rpm\""
-    Pcmd(cmd)
+    #cmd = "ansible all -a \"sudo rpm -ivh  " + HOME + "/bin/*.rpm\""
+    #Pcmd(cmd)
 
     SaveCmds("cmd/ansible.sh")
 
