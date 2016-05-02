@@ -6,7 +6,7 @@ import os
 host=[]
 
 rgsize = 1
-rgrange = 100
+rgrange = 1000
 
 rpinsamerange = 20
 rpinotherrange = 10
@@ -185,7 +185,7 @@ def GenServerCmd(head, tail, log):
 
 def GenDataCmd():
     CleanCmd()
-    Pcmd (CD_HOME)
+    Pcmd ("cd " + HOME +"/gopath/src/github.com/fakewechat/bin")
     cmd = "cd ../python"
     Pcmd(cmd)
     cmd = "python gen.py -a " + "1," + str(rgsize * rgrange ) + "  -c " + str(rpinsamerange) +  "   -m " +  str(rpinotherrange) + "   -r " + str( rgrange )
@@ -201,7 +201,7 @@ def GoCheckDBCmd():
     for i in range(1, rgsize+1):
         for ipadd in rg[i]:
             Pcmd (CD_HOME)
-            Pcmd( "./goredis -host " + str(ipadd)+  " -port "+ str( 1500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i)  + " -method " +  " check"   )
+            Pcmd( "./goredis -host " + str(ipadd)+  " -port "+ str( 1500) +  " -minid " + str( 1 + (i-1)*rgrange) +  " -maxid " + str( rgrange * i)  + " -method " +  " check  > ./" + "checkdbresult" + str(ipadd) + ".txt"   )
             SaveCmds(makeCheckName(ipadd))
     print "\n\n\n"
 
@@ -236,7 +236,7 @@ def Genresign():
 
 def Stop_Redis():
     CleanCmd()
-    cmd = "killall -9 " + HOME + "/bin/redis-server"
+    cmd = "killall -9 " + "redis-server"
     Pcmd(cmd)
     cmd = "rm -f " + HOME + "/bin/dump.rdb"
     Pcmd(cmd)
@@ -255,6 +255,8 @@ def GenAnsible():
     cmd = "ansible all -m copy -a \"src=" + HOME + "/gopath/src/github.com/fakewechat/bin dest=" + HOME + "\" "
     Pcmd(cmd)
 
+    cmd = "ansible all -m copy -a \"src=" + HOME + "/gopath/src/github.com/fakewechat/package/sysctl.conf dest=" + HOME + "/bin\" "
+    Pcmd(cmd)
     for i in range(1, rgsize +1):
         for ipadd in rg[i]:
             cmd = "ansible " + str(ipadd) + " -m copy -a \"src=" + HOME + "/gopath/src/github.com/fakewechat/bin/" + makeClientName(ipadd) + " dest=" + HOME + "/bin/client.sh\""
@@ -272,54 +274,32 @@ def GenAnsible():
     cmd = "ansible all -a \"sudo cp " + HOME + "/bin/sysctl.conf /etc\""
     Pcmd(cmd)
 
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin mode=700\""
+    cmd = "ansible all  -m raw -a \"chmod 777 -R " + HOME + "/bin/\""
     Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/gateway mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/redis-server mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/router mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/poster mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/localposter mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/cacheserver mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/monitorclient mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/monitorserver mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/client mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/goredis mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/redis-cli mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/kill.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/start_redis.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/stop_redis.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/redis.conf mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/GoSaveDb.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/client.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/checkdb.sh mode=700\""
-    Pcmd(cmd)
-    cmd = "ansible all -m file -a \"dest=" + HOME + "/bin/server.sh mode=700\""
-    Pcmd(cmd)
+
+
+
     # setup
     cmd = "ansible all -a \"sudo sysctl -p\""
     Pcmd(cmd)
+
+    cmd = "ansible all  -m raw -a \"systemctl stop firewalld.service\""
+    Pcmd(cmd)
+
     cmd = "ansible all -a \"sudo rpm -ivh  " + HOME + "/bin/*.rpm\""
     Pcmd(cmd)
+
     SaveCmds("cmd/ansible.sh")
 
 
+def GerDBResultCmd():
+    CleanCmd()
+    for i in range(1, rgsize+1):
+        for ipadd in rg[i]:
+            Pcmd( "scp "+ str(ipadd) +":" +HOME + "/bin/checkdbresult*.txt ./"   )
+    SaveCmds("cmd/getalldbresult.sh")
+
+    print "\n\n\n"
 if __name__ == "__main__":
     #list host for /etc/ansible/hosts
     listHost()
@@ -332,6 +312,7 @@ if __name__ == "__main__":
 
     GoCheckDBCmd()
     GoSaveDBCmd()
+
     CleanRedisData()
 
     PyCheckDBCmd()
@@ -339,8 +320,11 @@ if __name__ == "__main__":
 
     Genresign()
 
+    GenDataCmd()
+
     GenAnsible()
 
     Start_Redis()
     Stop_Redis()
 
+    GerDBResultCmd()
