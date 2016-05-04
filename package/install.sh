@@ -1,7 +1,7 @@
 #!/bin/bash
 set -o -e
 
-sudo yum install -y screen  gcc gcc-c++ autoconf automake libtool vim  wget psmisc
+sudo yum install -y screen gcc gcc-c++ autoconf automake libtool vim  wget psmisc yum-utils make
 
 cd $HOME/gopath/src/github.com/fakewechat/package
 
