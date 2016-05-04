@@ -5,7 +5,7 @@ import os
 
 host=[]
 
-rgsize = 1
+rgsize = 4
 rgrange = 1000
 
 rpinsamerange = 20
@@ -168,7 +168,7 @@ def GenServerCmd(head, tail, log):
             logstr = " "
             if log == True:
                 logstr = " > ./poster" + str(index) + ".log  2 >&1 "
-            Pcmd( head + "  ./poster -hostid=poster" + str(index) + " -servertype=poster -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(9800) + " -rgid=" + str(i) + " -process=poster " + parameter  + logstr  + tail)
+            Pcmd( head + "  ./poster -hostid=poster" + str(index) + " -servertype=poster -listenaddress=\"" + str(ipadd) + "\" -listenport=" + str(11000) + " -rgid=" + str(i) + " -process=poster " + parameter  + logstr  + tail)
 
             index += 1
             #localposter

@@ -8,8 +8,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"net"
 	//"os"
-	"strconv"
 	"sort"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -35,7 +36,7 @@ func main() {
 	}
 
 	defer socket.Close()
-
+	go Drawit()
 	go forward()
 	for {
 
@@ -57,76 +58,96 @@ func check(e error) {
 	}
 }
 
-func forward() {
-	
-	dic := make(map[string] int)
-	keys := make([]string,0)
-	starttime := time.Now().Unix()
+var lock sync.Mutex
+
+func Drawit() {
 	for {
+		time.Sleep(time.Duration(3) * time.Second)
+		lock.Lock()
+		DrawScreen(dic, keys, starttime)
+		lock.Unlock()
+
+	}
+
+}
+
+var dic map[string]int
+
+var keys []string
+var starttime int64
+
+func forward() {
+
+	dic = make(map[string]int)
+	keys = make([]string, 0)
+	starttime = time.Now().Unix()
+	for {
+
 		buff := <-buffque
 
 		msg := &message.ClientMonitorStatus{}
 		err := proto.Unmarshal(buff, msg) //unSerialize
-		if err !=nil {
+		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 		finished := int(msg.Finished)
+		lock.Lock()
 		value, ok := dic[msg.Host]
 		if !ok {
 			dic[msg.Host] = finished
 			keys = append(keys, msg.Host)
 			sort.Strings(keys)
-		} else if value ==  finished {
+		} else if value == finished {
 			continue
+			lock.Unlock()
 		} else {
 			dic[msg.Host] = finished
 		}
-		
-		DrawScreen(dic, keys, starttime)
+
+		lock.Unlock()
 
 		buff = nil
 	}
-	
+
 }
 
 func CleanScreen() {
 	s := fmt.Sprintf("\x1b[0;0H")
-	
+
 	fmt.Println(s)
 	s = fmt.Sprint("\x1b[2J")
 	fmt.Println(s)
-		
-}
-
-func WriteString (color int, x int, y int, str string) {
-		s1 := fmt.Sprintf("\x1b[%d;%dH", y, x)
-		
-		s2 := fmt.Sprintf("\x1b[0;%dm%s\x1b[0m", color, str  )
-		fmt.Println(s1+s2)
 
 }
 
-func DrawScreen( dict map[string] int, keys[]string, starttime int64) {
+func WriteString(color int, x int, y int, str string) {
+	s1 := fmt.Sprintf("\x1b[%d;%dH", y, x)
+
+	s2 := fmt.Sprintf("\x1b[0;%dm%s\x1b[0m", color, str)
+	fmt.Println(s1 + s2)
+
+}
+
+func DrawScreen(dict map[string]int, keys []string, starttime int64) {
 	CleanScreen()
-	
+
 	Red := 31
 	Yellow := 33
 	sum := 0
-	for _,v := range dict {
+	for _, v := range dict {
 		sum += v
 	}
 	spendtime := time.Now().Unix() - starttime
-	WriteString (Red, 30, 0, "sum: " +  strconv.Itoa(sum) + " spend " +  strconv.Itoa(int(spendtime)) + " seconds"  )
+	WriteString(Red, 30, 0, "sum: "+strconv.Itoa(sum)+" spend "+strconv.Itoa(int(spendtime))+" seconds")
 
-	
 	index := 0
-	for k  := range keys {
-		
-		x := 30*(index % 4)
-		y := 2 + index / 4
-		WriteString(Yellow, x, y, keys[k] + ":" + strconv.Itoa(  dict[ keys[k]  ]  )   )
-        index += 1
+	for k := range keys {
+
+		x := 30 * (index % 4)
+		y := 2 + index/4
+		WriteString(Yellow, x, y, keys[k]+":"+strconv.Itoa(dict[keys[k]]))
+		index += 1
 	}
-	
+
 }
