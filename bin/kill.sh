@@ -1,3 +1,4 @@
+killall client
 killall gateway
 killall poster
 killall localposter
